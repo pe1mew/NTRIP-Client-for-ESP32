@@ -1,0 +1,13 @@
+{
+    "wifi": {
+        "ssid": "casaminerva_nomap",
+        "password": "0652528773"
+    },
+    "ntrip": {
+        "host": "rfsee.net",
+        "port": 2101,
+        "mntpnt": "RFSEE01",
+        "user": "rfsee",
+        "passwd": "0652528773"
+    }
+}
