@@ -29,13 +29,13 @@ Adafruit_NeoPixel pixels(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 NTRIPClient ntrip_c;
 
 // Configuration variables
-char ssid[32];
-char password[32];
-char host[32];
-int httpPort;
-char mntpnt[32];
-char user[32];
-char passwd[32];
+char ssid[32];      ///< WiFi SSID
+char password[32];  ///< WiFi password
+char host[32];      ///< NTRIP server host
+int httpPort;       ///< NTRIP server port
+char mntpnt[32];    ///< NTRIP mountpoint
+char user[32];      ///< NTRIP username
+char passwd[32];    ///< NTRIP password
 
 void loadConfig() {
     if (!SPIFFS.begin(true)) {
@@ -68,7 +68,6 @@ void loadConfig() {
     strlcpy(user, doc["ntrip"]["user"], sizeof(user));
     strlcpy(passwd, doc["ntrip"]["passwd"], sizeof(passwd));
 }
-
 
 void setup() {
     // Initialize serial communication
@@ -132,5 +131,24 @@ void loop() {
     while(ntrip_c.available()) {
         char ch = ntrip_c.read();        
         Serial2.print(ch);
+    }
+
+    // Read and send GGA sentences
+    static char ggaBuffer[256];
+    static int ggaIndex = 0;
+
+    while (Serial2.available()) {
+        char ch = Serial2.read();
+        if (ch == '\n') {
+            ggaBuffer[ggaIndex] = '\0';
+            if (strstr(ggaBuffer, "$GPGGA") != NULL) {
+                ntrip_c.sendGGA(ggaBuffer);
+            }
+            ggaIndex = 0;
+        } else {
+            if (ggaIndex < sizeof(ggaBuffer) - 1) {
+                ggaBuffer[ggaIndex++] = ch;
+            }
+        }
     }
 }

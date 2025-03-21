@@ -53,6 +53,13 @@ public:
      * @return The number of bytes read.
      */
     int readLine(char* buffer, int size);
+
+    /**
+     * @brief Send a GGA sentence to the NTRIP Caster.
+     * 
+     * @param gga The GGA sentence to send.
+     */
+    void sendGGA(const char* gga);
 };
 
 #endif

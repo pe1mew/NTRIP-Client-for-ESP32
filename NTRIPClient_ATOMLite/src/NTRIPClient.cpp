@@ -105,3 +105,17 @@ int NTRIPClient::readLine(char* _buffer, int size) {
 
     return len;
 }
+
+void NTRIPClient::sendGGA(const char* gga) {
+    if (!connected()) {
+        Serial.println("Not connected to NTRIP Caster");
+        return;
+    }
+
+    String ggaString = String(gga) + "\r\n";
+    print(ggaString);
+
+    #ifdef Debug
+    Serial.println("Sent GGA: " + ggaString);
+    #endif
+}
