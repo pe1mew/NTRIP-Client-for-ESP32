@@ -1,3 +1,25 @@
+// --------------------------------------------------------------------
+//   This file is part of the PE1MEW NTRIP Client.
+//
+//   The NTRIP Client is distributed in the hope that 
+//   it will be useful, but WITHOUT ANY WARRANTY; without even the 
+//   implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+//   PURPOSE.
+// --------------------------------------------------------------------*/
+
+/*!
+   
+ \file NTRIPClient.cpp
+ \brief NTRIPClient class implementation
+ \author Remko Welling (PE1MEW) 
+
+ This file was retrieved from the following work:
+  - [NTRIP-client-for-Arduino](https://github.com/GLAY-AK2/NTRIP-client-for-Arduino)
+
+ The file was refactored to be used in the PE1MEW NTRIP Client project.
+
+*/
+
 #include "NTRIPClient.h"
 
 bool NTRIPClient::reqSrcTbl(const char* host, int &port) {

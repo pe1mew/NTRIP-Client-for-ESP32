@@ -1,13 +1,71 @@
 // #define Debug  // Add this line to enable debug information
 
-/*
- *  NTRIP client for Arduino Ver. 1.0.0 
- *  NTRIPClient Sample
- *  Request Source Table (Source Table is basestation list in NTRIP Caster)
- *  Request Reference Data 
- * 
- * 
- */
+// --------------------------------------------------------------------
+//   This file is part of the PE1MEW NTRIP Client.
+//
+//   The NTRIP Client is distributed in the hope that 
+//   it will be useful, but WITHOUT ANY WARRANTY; without even the 
+//   implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+//   PURPOSE.
+// --------------------------------------------------------------------*/
+
+/*!
+   
+ \file main.cpp
+ \brief Main file for the NTRIPClient project
+ \author Remko Welling (PE1MEW) 
+
+ This file was based upon the following work:
+  - [NTRIP-client-for-Arduino](https://github.com/GLAY-AK2/NTRIP-client-for-Arduino)
+  - [ESPNTRIPClient](https://github.com/klstronics/ESPNTRIPClient)
+
+ The original work is adapted for ATOM Lite ESP32 board and the following changes were made:
+  - Added WiFiManager for easy configuration
+  - Added SPIFFS for storing configuration
+  - Added NeoPixel LED for status indication
+  - Added button for configuration mode
+  - Added GGA sentence parsing and sending
+  - Added SourceTable request
+  - Added debug information
+
+  The NTRIPClient is a simple NTRIP client for the ESP32 platform. It is designed to connect to an NTRIP server and receive RTCM data. 
+  The client can be configured using a button to enter configuration mode and set the WiFi and NTRIP server settings. 
+  The client will connect to the NTRIP server and request the SourceTable to get the available mountpoints. 
+  The client will then request the raw data from the specified mountpoint using the provided credentials. 
+  The client will also read GGA sentences from the serial interface and send them to the NTRIP server. 
+  The client will indicate the status using a NeoPixel LED. 
+
+  The client will automatically reconnect to the NTRIP server if the connection is lost. 
+
+  The client will store the configuration in SPIFFS and load it on startup. 
+
+  The client will enter configuration mode if the button is pressed for 3 seconds. 
+
+  The client will turn off the LED after 500ms if no data is received. 
+
+  The client will print debug information if the Debug flag is set. 
+
+  The client will restart if the NTRIP server is not reachable. 
+
+  The client will restart if the mountpoint request fails. 
+
+  The client will restart if the mountpoint request is successful but no data is received. 
+
+  The client will restart if the mountpoint request is successful but the connection is lost. 
+
+  The client will restart if the mountpoint request is successful but the button is pressed. 
+
+  The client will restart if the mountpoint request is successful but the GGA sentence is not sent. 
+
+  The client will restart if the mountpoint request is successful but the GGA sentence is not received. 
+
+  The client will restart if the mountpoint request is successful but the GGA sentence is not sent in time. 
+
+  The client will restart if the mountpoint request is successful but the GGA sentence is not received in time. 
+
+  The client will restart if the mountpoint request is successful but the configuration is not saved.
+*/
+
 #include <WiFi.h>
 #include <WiFiManager.h>
 #include "NTRIPClient.h"
@@ -27,32 +85,33 @@
 #define TXD_PIN 21
 #define RXD_PIN 22
 
-Adafruit_NeoPixel pixels(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
-
-NTRIPClient ntrip_c;
+Adafruit_NeoPixel pixels(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800); ///< NeoPixel LED object
+NTRIPClient ntrip_c; ///< NTRIPClient object
 
 // Configuration variables
-char ssid[32];      ///< WiFi SSID
-char password[32];  ///< WiFi password
-char host[32];      ///< NTRIP server host
-int httpPort;       ///< NTRIP server port
-char mntpnt[32];    ///< NTRIP mountpoint
-char user[32];      ///< NTRIP username
-char passwd[32];    ///< NTRIP password
+char ssid[32] = {'\0'};      ///< WiFi SSID
+char password[32] = {'\0'};  ///< WiFi password
+char host[32] = {'\0'};      ///< NTRIP server host
+int httpPort = {0};          ///< NTRIP server port
+char mntpnt[32] = {'\0'};    ///< NTRIP mountpoint
+char user[32] = {'\0'};      ///< NTRIP username
+char passwd[32] = {'\0'};    ///< NTRIP password
 
 // For reading and sending GGA sentences
-static char ggaBuffer[256];
-static int ggaIndex = 0;
+static char ggaBuffer[256] = {'\0'};
+static int ggaIndex = {0};
+
+#define LED_OFF_TIME_MS 500 ///< Time in milliseconds to turn off LED after last data received
 
 // Flag to track receiving state
-#define LED_OFF_TIME_MS 500
+bool isReceiving = false;          ///< Flag to track if data is being received
+unsigned long lastReceiveTime = {0}; ///< Time of last data received in ms
 
-bool isReceiving = false;
-unsigned long lastReceiveTime = 0;
+#define BUTTON_PRESS_TIME_MS 3000 ///< Time in milliseconds to hold button to enter configuration mode
 
 // Button press handling
 bool buttonPressed = false;
-unsigned long buttonPressTime = 0;
+unsigned long buttonPressTime = {0};
 bool configMode = false;
 
 /**
@@ -172,12 +231,17 @@ void configurationMode(const bool buttonPressed = false) {
     wifiManager.setBreakAfterConfig(true);
 
     // If configuration is empty, start configuration portal
-    if ((strlen(ssid) == 0 || strlen(password) == 0)) {
-        wifiManager.startConfigPortal("NTRIPClient_Config");
+    if (strlen(ssid) == 0 || strlen(password) == 0 || buttonPressed) {
+        // wifiManager.startConfigPortal("NTRIPClient_Config");
+
+        wifiManager.startConfigPortal("NTRIPClient_Config_1");
+        wifiManager.stopConfigPortal();
+        wifiManager.disconnect();
     } else {
         WiFi.begin(ssid, password);
-        if ((WiFi.waitForConnectResult() != WL_CONNECTED) || buttonPressed) {
-            wifiManager.startConfigPortal("NTRIPClient_Config");
+        if ((WiFi.waitForConnectResult() != WL_CONNECTED)) {
+            // wifiManager.autoConnect();
+            wifiManager.startConfigPortal("NTRIPClient_Config_2");
         }
     }
 
@@ -264,7 +328,7 @@ void loop() {
         if (!buttonPressed) {
             buttonPressed = true;
             buttonPressTime = millis();
-        } else if (millis() - buttonPressTime > 3000) { // 3 seconds press
+        } else if (millis() - buttonPressTime > BUTTON_PRESS_TIME_MS) { // 3 seconds press
             configurationMode(true);
             buttonPressed = false;
         }
