@@ -1,0 +1,13 @@
+{
+    "wifi": {
+        "ssid": "ssid",
+        "password": "wifi_password"
+    },
+    "ntrip": {
+        "host": "host",
+        "port": 2101,
+        "mntpnt": "mountpoint",
+        "user": "user",
+        "passwd": "user_password"
+    }
+}
