@@ -53,17 +53,7 @@
 
   The client will restart if the mountpoint request is successful but the connection is lost. 
 
-  The client will restart if the mountpoint request is successful but the button is pressed. 
-
-  The client will restart if the mountpoint request is successful but the GGA sentence is not sent. 
-
-  The client will restart if the mountpoint request is successful but the GGA sentence is not received. 
-
-  The client will restart if the mountpoint request is successful but the GGA sentence is not sent in time. 
-
-  The client will restart if the mountpoint request is successful but the GGA sentence is not received in time. 
-
-  The client will restart if the mountpoint request is successful but the configuration is not saved.
+   
 */
 
 #include <WiFi.h>
@@ -102,6 +92,7 @@ static char ggaBuffer[256] = {'\0'};
 static int ggaIndex = {0};
 
 #define LED_OFF_TIME_MS 500 ///< Time in milliseconds to turn off LED after last data received
+#define NTRIP_TIMEOUT_MS 60000 ///< Time in milliseconds to reset system if no NTRIP data is received
 
 // Flag to track receiving state
 bool isReceiving = false;          ///< Flag to track if data is being received
@@ -119,13 +110,13 @@ bool configMode = false;
  */
 void loadConfig() {
     if (!SPIFFS.begin(true)) {
-        Serial.println("Failed to mount file system");
+        Serial.println("  ERROR: Failed to mount file system");
         return;
     }
 
     File configFile = SPIFFS.open("/config.json", "r");
     if (!configFile) {
-        Serial.println("Failed to open config file");
+        Serial.println("  ERROR: Failed to open config file");
         return;
     }
 
@@ -136,7 +127,7 @@ void loadConfig() {
     DynamicJsonDocument doc(1024);
     DeserializationError error = deserializeJson(doc, buf.get());
     if (error) {
-        Serial.println("Failed to parse config file");
+        Serial.println("  ERROR: Failed to parse config file");
         return;
     }
 
@@ -164,7 +155,7 @@ void saveConfig() {
 
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {
-        Serial.println("Failed to open config file for writing");
+        Serial.println("  ERROR: Failed to open config file for writing");
         return;
     }
 
@@ -234,20 +225,20 @@ void configurationMode(const bool buttonPressed = false) {
     if (strlen(ssid) == 0 || strlen(password) == 0 || buttonPressed) {
         // wifiManager.startConfigPortal("NTRIPClient_Config");
 
-        wifiManager.startConfigPortal("NTRIPClient_Config_1");
+        wifiManager.startConfigPortal("NTRIPClient_Config");
         wifiManager.stopConfigPortal();
         wifiManager.disconnect();
     } else {
         WiFi.begin(ssid, password);
         if ((WiFi.waitForConnectResult() != WL_CONNECTED)) {
             // wifiManager.autoConnect();
-            wifiManager.startConfigPortal("NTRIPClient_Config_2");
+            wifiManager.startConfigPortal("NTRIPClient_Config");
         }
     }
 
     if (configMode){
         // Save the new configuration to globals
-        Serial.println("Storing data to SPIFFS");
+        Serial.println("   INFO: Storing data to SPIFFS");
         strlcpy(ssid, WiFi.SSID().c_str(), sizeof(ssid));
         strlcpy(password, WiFi.psk().c_str(), sizeof(password));
         strlcpy(host, custom_host.getValue(), sizeof(host));
@@ -259,7 +250,9 @@ void configurationMode(const bool buttonPressed = false) {
         saveConfig();
         ESP.restart();
     }
+    #ifdef Debug
     printConfig();
+    #endif
 }
 
 /**
@@ -287,14 +280,14 @@ void setup() {
     configurationMode(digitalRead(BUTTON_PIN) == LOW);
 
     // Initialize NTRIP client
-    Serial.println("WiFi connected");
-    Serial.println("IP address: ");
+    Serial.println("   INFO: WiFi connected");
+    Serial.print("   INFO: IP address: ");
     Serial.println(WiFi.localIP());
     pixels.setPixelColor(0, pixels.Color(0, 255, 0)); // Green for WiFi connected
     pixels.show();
     
     // Request SourceTable from NTRIP server
-    Serial.println("Requesting SourceTable.");
+    Serial.println("   INFO: Requesting SourceTable.");
     if(ntrip_c.reqSrcTbl(host, httpPort)) {
         char buffer[512];
         delay(5);
@@ -303,18 +296,18 @@ void setup() {
             Serial.print(buffer); 
         }
     } else {
-        Serial.println("SourceTable request error");
+        Serial.println("  ERROR: SourceTable request error");
     }
-    Serial.print("Requesting SourceTable is OK\n");
+    Serial.print("   INFO: Requesting SourceTable is OK\n");
     ntrip_c.stop(); // Need to call "stop" function for next request.
     
     // Request raw data from MountPoint
-    Serial.println("Requesting MountPoint's Raw data");
+    Serial.println("   INFO: Requesting MountPoint's Raw data");
     if(!ntrip_c.reqRaw(host, httpPort, mntpnt, user, passwd)) {
         delay(15000);
         ESP.restart();
     }
-    Serial.println("Requesting MountPoint is OK");
+    Serial.println("   INFO: Requesting MountPoint is OK");
     pixels.setPixelColor(0, pixels.Color(0, 0, 255)); // Blue for NTRIP connected and receiving
     pixels.show();
 }
@@ -352,6 +345,18 @@ void loop() {
     } else if (millis() - lastReceiveTime > LED_OFF_TIME_MS) {
         pixels.setPixelColor(0, pixels.Color(0, 0, 255)); // Blue for no data received
         pixels.show();
+    }
+
+    // Check if no data received for more than NTRIP_TIMEOUT_MS
+    if (millis() - lastReceiveTime > NTRIP_TIMEOUT_MS) {
+        Serial.println("WARNING: No NTRIP data received for more than a minute, restarting...");
+        ESP.restart();
+    }
+
+    if (!ntrip_c.connected()) {
+        Serial.println("  ERROR: NTRIP connection lost, restarting...");
+        ESP.restart();
+        
     }
 
     // Read and send GGA sentences
