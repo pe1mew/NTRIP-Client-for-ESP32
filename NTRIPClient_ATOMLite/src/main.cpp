@@ -8,8 +8,8 @@
  * 
  * 
  */
-//#include <ESP8266WiFi.h>  //Need for ESP8266
-#include <WiFi.h>           //Need for ESP32 
+#include <WiFi.h>
+#include <WiFiManager.h>
 #include "NTRIPClient.h"
 #include <Adafruit_NeoPixel.h>
 #include <ArduinoJson.h>
@@ -19,6 +19,9 @@
 // NeoPixel LED configuration
 #define LED_PIN 27
 #define NUMPIXELS 1
+
+// Button configuration
+#define BUTTON_PIN 39
 
 // Second serial interface for NTRIPClient
 #define TXD_PIN 21
@@ -47,6 +50,14 @@ static int ggaIndex = 0;
 bool isReceiving = false;
 unsigned long lastReceiveTime = 0;
 
+// Button press handling
+bool buttonPressed = false;
+unsigned long buttonPressTime = 0;
+bool configMode = false;
+
+/**
+ * @brief Load configuration from SPIFFS.
+ */
 void loadConfig() {
     if (!SPIFFS.begin(true)) {
         Serial.println("Failed to mount file system");
@@ -79,12 +90,123 @@ void loadConfig() {
     strlcpy(passwd, doc["ntrip"]["passwd"], sizeof(passwd));
 }
 
+/**
+ * @brief Save configuration to SPIFFS.
+ */
+void saveConfig() {
+    DynamicJsonDocument doc(1024);
+    doc["wifi"]["ssid"] = ssid;
+    doc["wifi"]["password"] = password;
+    doc["ntrip"]["host"] = host;
+    doc["ntrip"]["port"] = httpPort;
+    doc["ntrip"]["mntpnt"] = mntpnt;
+    doc["ntrip"]["user"] = user;
+    doc["ntrip"]["passwd"] = passwd;
+
+    File configFile = SPIFFS.open("/config.json", "w");
+    if (!configFile) {
+        Serial.println("Failed to open config file for writing");
+        return;
+    }
+
+    serializeJson(doc, configFile);
+}
+
+/**
+ * @brief Print the current configuration to the serial output.
+ */
+void printConfig() {
+    Serial.println("Current Configuration:");
+    Serial.print("WiFi SSID: ");
+    Serial.println(ssid);
+    Serial.print("WiFi Password: ");
+    Serial.println(password);
+    Serial.print("NTRIP Host: ");
+    Serial.println(host);
+    Serial.print("NTRIP Port: ");
+    Serial.println(httpPort);
+    Serial.print("NTRIP Mountpoint: ");
+    Serial.println(mntpnt);
+    Serial.print("NTRIP Username: ");
+    Serial.println(user);
+    Serial.print("NTRIP Password: ");
+    Serial.println(passwd);
+}
+
+/**
+ * @brief Callback function to set the configuration mode flag.
+ */
+void saveConfigCallback() {
+    configMode = true;
+}
+
+/**
+ * @brief Enter configuration mode to initialize WiFi.
+ * 
+ * @param buttonPressed Indicates if the button was pressed to enter configuration mode.
+ */
+void configurationMode(const bool buttonPressed = false) {
+    pixels.setPixelColor(0, pixels.Color(255, 255, 255)); // Orange for configuration portal
+    pixels.show();
+
+    // Try to load existing configuration
+    loadConfig();
+
+    WiFiManager wifiManager;
+
+    // Custom parameters
+    WiFiManagerParameter custom_host("host", "NTRIP Host", host, sizeof(host));
+    WiFiManagerParameter custom_port("port", "NTRIP Port", String(httpPort).c_str(), 6);
+    WiFiManagerParameter custom_mntpnt("mntpnt", "NTRIP Mountpoint", mntpnt, sizeof(mntpnt));
+    WiFiManagerParameter custom_user("user", "NTRIP Username", user, sizeof(user));
+    WiFiManagerParameter custom_passwd("passwd", "NTRIP Password", passwd, sizeof(passwd));
+
+    // Add custom parameters to WiFiManager
+    wifiManager.addParameter(&custom_host);
+    wifiManager.addParameter(&custom_port);
+    wifiManager.addParameter(&custom_mntpnt);
+    wifiManager.addParameter(&custom_user);
+    wifiManager.addParameter(&custom_passwd);
+
+    wifiManager.setSaveConfigCallback(saveConfigCallback);
+    wifiManager.setBreakAfterConfig(true);
+
+    // If configuration is empty, start configuration portal
+    if ((strlen(ssid) == 0 || strlen(password) == 0)) {
+        wifiManager.startConfigPortal("NTRIPClient_Config");
+    } else {
+        WiFi.begin(ssid, password);
+        if ((WiFi.waitForConnectResult() != WL_CONNECTED) || buttonPressed) {
+            wifiManager.startConfigPortal("NTRIPClient_Config");
+        }
+    }
+
+    if (configMode){
+        // Save the new configuration to globals
+        Serial.println("Storing data to SPIFFS");
+        strlcpy(ssid, WiFi.SSID().c_str(), sizeof(ssid));
+        strlcpy(password, WiFi.psk().c_str(), sizeof(password));
+        strlcpy(host, custom_host.getValue(), sizeof(host));
+        httpPort = atoi(custom_port.getValue());
+        strlcpy(mntpnt, custom_mntpnt.getValue(), sizeof(mntpnt));
+        strlcpy(user, custom_user.getValue(), sizeof(user));
+        strlcpy(passwd, custom_passwd.getValue(), sizeof(passwd));
+        // Save globals to SPIFFS
+        saveConfig();
+        ESP.restart();
+    }
+    printConfig();
+}
+
+/**
+ * @brief Setup function to initialize the system.
+ */
 void setup() {
     // Initialize serial communication
     Serial.begin(115200); // Default USB Serial (UART0)
     delay(10);
 
-    // Iniotialize Serial2 for NTRIPClient
+    // Initialize Serial2 for NTRIPClient
     Serial2.begin(115200, SERIAL_8N1, RXD_PIN, TXD_PIN); // UART2 on GPIO21/22
     delay(10);
 
@@ -93,17 +215,14 @@ void setup() {
     pixels.setPixelColor(0, pixels.Color(255, 0, 0)); // Red for WiFi disconnected
     pixels.show();
 
-    // Load configuration
-    loadConfig();
+    // Setup button
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
 
-    // Connect to WiFi
-    Serial.print("Connecting to ");
-    Serial.println(ssid);
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
+    // Call for configuration mode to initialize WiFi, 
+    // if button is pressed reconfiguration is required, start configuration mode
+    configurationMode(digitalRead(BUTTON_PIN) == LOW);
+
+    // Initialize NTRIP client
     Serial.println("WiFi connected");
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
@@ -136,7 +255,23 @@ void setup() {
     pixels.show();
 }
 
+/**
+ * @brief Main loop function to handle data reception and button press.
+ */
 void loop() {
+    // Check for button press to activate hotspot
+    if (digitalRead(BUTTON_PIN) == LOW) {
+        if (!buttonPressed) {
+            buttonPressed = true;
+            buttonPressTime = millis();
+        } else if (millis() - buttonPressTime > 3000) { // 3 seconds press
+            configurationMode(true);
+            buttonPressed = false;
+        }
+    } else {
+        buttonPressed = false;
+    }
+
     // Continuously read and print data from NTRIP server
     bool dataReceived = false;
     while(ntrip_c.available()) {
@@ -156,9 +291,6 @@ void loop() {
     }
 
     // Read and send GGA sentences
-    static char ggaBuffer[256];
-    static int ggaIndex = 0;
-
     while (Serial2.available()) {
         char ch = Serial2.read();
         if (ch == '\n') {
