@@ -37,6 +37,16 @@ char mntpnt[32];    ///< NTRIP mountpoint
 char user[32];      ///< NTRIP username
 char passwd[32];    ///< NTRIP password
 
+// For reading and sending GGA sentences
+static char ggaBuffer[256];
+static int ggaIndex = 0;
+
+// Flag to track receiving state
+#define LED_OFF_TIME_MS 500
+
+bool isReceiving = false;
+unsigned long lastReceiveTime = 0;
+
 void loadConfig() {
     if (!SPIFFS.begin(true)) {
         Serial.println("Failed to mount file system");
@@ -128,9 +138,21 @@ void setup() {
 
 void loop() {
     // Continuously read and print data from NTRIP server
+    bool dataReceived = false;
     while(ntrip_c.available()) {
         char ch = ntrip_c.read();        
         Serial2.print(ch);
+        dataReceived = true;
+    }
+
+    // Update LED based on receiving state
+    if (dataReceived) {
+        lastReceiveTime = millis();
+        pixels.setPixelColor(0, pixels.Color(0, 255, 0)); // Green for data received
+        pixels.show();
+    } else if (millis() - lastReceiveTime > LED_OFF_TIME_MS) {
+        pixels.setPixelColor(0, pixels.Color(0, 0, 255)); // Blue for no data received
+        pixels.show();
     }
 
     // Read and send GGA sentences
