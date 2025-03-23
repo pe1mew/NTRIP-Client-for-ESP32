@@ -79,17 +79,17 @@ Adafruit_NeoPixel pixels(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800); ///< NeoPixe
 NTRIPClient ntrip_c; ///< NTRIPClient object
 
 // Configuration variables
-char ssid[32] = {'\0'};      ///< WiFi SSID
-char password[32] = {'\0'};  ///< WiFi password
-char host[32] = {'\0'};      ///< NTRIP server host
-int httpPort = {0};          ///< NTRIP server port
-char mntpnt[32] = {'\0'};    ///< NTRIP mountpoint
-char user[32] = {'\0'};      ///< NTRIP username
-char passwd[32] = {'\0'};    ///< NTRIP password
+char _wifiSsid[32] = {'\0'};      ///< WiFi SSID
+char _wifiPassword[32] = {'\0'};  ///< WiFi password
+char _ntripHost[32] = {'\0'};      ///< NTRIP server host
+int  _ntripHttpPort = {0};          ///< NTRIP server port
+char _ntripMountPoint[32] = {'\0'};    ///< NTRIP mountpoint
+char _ntripUser[32] = {'\0'};      ///< NTRIP username
+char _ntripPassword[32] = {'\0'};    ///< NTRIP password
 
 // For reading and sending GGA sentences
-static char ggaBuffer[256] = {'\0'};
-static int ggaIndex = {0};
+static char nmeaBuffer[256] = {'\0'};
+static int nmeaBufferIndex = {0};
 
 #define LED_OFF_TIME_MS 500 ///< Time in milliseconds to turn off LED after last data received
 #define NTRIP_TIMEOUT_MS 60000 ///< Time in milliseconds to reset system if no NTRIP data is received
@@ -104,6 +104,9 @@ unsigned long lastReceiveTime = {0}; ///< Time of last data received in ms
 bool buttonPressed = false;
 unsigned long buttonPressTime = {0};
 bool configMode = false;
+
+unsigned long lastGGASendTime = 0; ///< Variable to store the last GGA send time
+const unsigned long GGA_SEND_INTERVAL = 300000; ///< 5 minutes in milliseconds
 
 /**
  * @brief Load configuration from SPIFFS.
@@ -131,13 +134,13 @@ void loadConfig() {
         return;
     }
 
-    strlcpy(ssid, doc["wifi"]["ssid"], sizeof(ssid));
-    strlcpy(password, doc["wifi"]["password"], sizeof(password));
-    strlcpy(host, doc["ntrip"]["host"], sizeof(host));
-    httpPort = doc["ntrip"]["port"];
-    strlcpy(mntpnt, doc["ntrip"]["mntpnt"], sizeof(mntpnt));
-    strlcpy(user, doc["ntrip"]["user"], sizeof(user));
-    strlcpy(passwd, doc["ntrip"]["passwd"], sizeof(passwd));
+    strlcpy(_wifiSsid, doc["wifi"]["ssid"], sizeof(_wifiSsid));
+    strlcpy(_wifiPassword, doc["wifi"]["password"], sizeof(_wifiPassword));
+    strlcpy(_ntripHost, doc["ntrip"]["host"], sizeof(_ntripHost));
+    _ntripHttpPort = doc["ntrip"]["port"];
+    strlcpy(_ntripMountPoint, doc["ntrip"]["mntpnt"], sizeof(_ntripMountPoint));
+    strlcpy(_ntripUser, doc["ntrip"]["user"], sizeof(_ntripUser));
+    strlcpy(_ntripPassword, doc["ntrip"]["passwd"], sizeof(_ntripPassword));
 }
 
 /**
@@ -145,13 +148,13 @@ void loadConfig() {
  */
 void saveConfig() {
     DynamicJsonDocument doc(1024);
-    doc["wifi"]["ssid"] = ssid;
-    doc["wifi"]["password"] = password;
-    doc["ntrip"]["host"] = host;
-    doc["ntrip"]["port"] = httpPort;
-    doc["ntrip"]["mntpnt"] = mntpnt;
-    doc["ntrip"]["user"] = user;
-    doc["ntrip"]["passwd"] = passwd;
+    doc["wifi"]["ssid"] = _wifiSsid;
+    doc["wifi"]["password"] = _wifiPassword;
+    doc["ntrip"]["host"] = _ntripHost;
+    doc["ntrip"]["port"] = _ntripHttpPort;
+    doc["ntrip"]["mntpnt"] = _ntripMountPoint;
+    doc["ntrip"]["user"] = _ntripUser;
+    doc["ntrip"]["passwd"] = _ntripPassword;
 
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {
@@ -168,19 +171,19 @@ void saveConfig() {
 void printConfig() {
     Serial.println("Current Configuration:");
     Serial.print("WiFi SSID: ");
-    Serial.println(ssid);
+    Serial.println(_wifiSsid);
     Serial.print("WiFi Password: ");
-    Serial.println(password);
+    Serial.println(_wifiPassword);
     Serial.print("NTRIP Host: ");
-    Serial.println(host);
+    Serial.println(_ntripHost);
     Serial.print("NTRIP Port: ");
-    Serial.println(httpPort);
+    Serial.println(_ntripHttpPort);
     Serial.print("NTRIP Mountpoint: ");
-    Serial.println(mntpnt);
+    Serial.println(_ntripMountPoint);
     Serial.print("NTRIP Username: ");
-    Serial.println(user);
+    Serial.println(_ntripUser);
     Serial.print("NTRIP Password: ");
-    Serial.println(passwd);
+    Serial.println(_ntripPassword);
 }
 
 /**
@@ -205,11 +208,11 @@ void configurationMode(const bool buttonPressed = false) {
     WiFiManager wifiManager;
 
     // Custom parameters
-    WiFiManagerParameter custom_host("host", "NTRIP Host", host, sizeof(host));
-    WiFiManagerParameter custom_port("port", "NTRIP Port", String(httpPort).c_str(), 6);
-    WiFiManagerParameter custom_mntpnt("mntpnt", "NTRIP Mountpoint", mntpnt, sizeof(mntpnt));
-    WiFiManagerParameter custom_user("user", "NTRIP Username", user, sizeof(user));
-    WiFiManagerParameter custom_passwd("passwd", "NTRIP Password", passwd, sizeof(passwd));
+    WiFiManagerParameter custom_host("host", "NTRIP Host", _ntripHost, sizeof(_ntripHost));
+    WiFiManagerParameter custom_port("port", "NTRIP Port", String(_ntripHttpPort).c_str(), 6);
+    WiFiManagerParameter custom_mntpnt("mntpnt", "NTRIP Mountpoint", _ntripMountPoint, sizeof(_ntripMountPoint));
+    WiFiManagerParameter custom_user("user", "NTRIP Username", _ntripUser, sizeof(_ntripUser));
+    WiFiManagerParameter custom_passwd("passwd", "NTRIP Password", _ntripPassword, sizeof(_ntripPassword));
 
     // Add custom parameters to WiFiManager
     wifiManager.addParameter(&custom_host);
@@ -222,14 +225,14 @@ void configurationMode(const bool buttonPressed = false) {
     wifiManager.setBreakAfterConfig(true);
 
     // If configuration is empty, start configuration portal
-    if (strlen(ssid) == 0 || strlen(password) == 0 || buttonPressed) {
+    if (strlen(_wifiSsid) == 0 || strlen(_wifiPassword) == 0 || buttonPressed) {
         // wifiManager.startConfigPortal("NTRIPClient_Config");
 
         wifiManager.startConfigPortal("NTRIPClient_Config");
         wifiManager.stopConfigPortal();
         wifiManager.disconnect();
     } else {
-        WiFi.begin(ssid, password);
+        WiFi.begin(_wifiSsid, _wifiPassword);
         if ((WiFi.waitForConnectResult() != WL_CONNECTED)) {
             // wifiManager.autoConnect();
             wifiManager.startConfigPortal("NTRIPClient_Config");
@@ -239,13 +242,13 @@ void configurationMode(const bool buttonPressed = false) {
     if (configMode){
         // Save the new configuration to globals
         Serial.println("   INFO: Storing data to SPIFFS");
-        strlcpy(ssid, WiFi.SSID().c_str(), sizeof(ssid));
-        strlcpy(password, WiFi.psk().c_str(), sizeof(password));
-        strlcpy(host, custom_host.getValue(), sizeof(host));
-        httpPort = atoi(custom_port.getValue());
-        strlcpy(mntpnt, custom_mntpnt.getValue(), sizeof(mntpnt));
-        strlcpy(user, custom_user.getValue(), sizeof(user));
-        strlcpy(passwd, custom_passwd.getValue(), sizeof(passwd));
+        strlcpy(_wifiSsid, WiFi.SSID().c_str(), sizeof(_wifiSsid));
+        strlcpy(_wifiPassword, WiFi.psk().c_str(), sizeof(_wifiPassword));
+        strlcpy(_ntripHost, custom_host.getValue(), sizeof(_ntripHost));
+        _ntripHttpPort = atoi(custom_port.getValue());
+        strlcpy(_ntripMountPoint, custom_mntpnt.getValue(), sizeof(_ntripMountPoint));
+        strlcpy(_ntripUser, custom_user.getValue(), sizeof(_ntripUser));
+        strlcpy(_ntripPassword, custom_passwd.getValue(), sizeof(_ntripPassword));
         // Save globals to SPIFFS
         saveConfig();
         ESP.restart();
@@ -289,7 +292,7 @@ void setup() {
     
     // Request SourceTable from NTRIP server
     Serial.println("   INFO: Requesting SourceTable.");
-    if(ntrip_c.reqSrcTbl(host, httpPort)) {
+    if(ntrip_c.reqSrcTbl(_ntripHost, _ntripHttpPort)) {
         char buffer[512];
         delay(5);
         while(ntrip_c.available()) {
@@ -304,7 +307,7 @@ void setup() {
     
     // Request raw data from MountPoint
     Serial.println("   INFO: Requesting MountPoint's Raw data");
-    if(!ntrip_c.reqRaw(host, httpPort, mntpnt, user, passwd)) {
+    if(!ntrip_c.reqRaw(_ntripHost, _ntripHttpPort, _ntripMountPoint, _ntripUser, _ntripPassword)) {
         delay(15000);
         ESP.restart();
     }
@@ -357,21 +360,52 @@ void loop() {
     if (!ntrip_c.connected()) {
         Serial.println("  ERROR: NTRIP connection lost, restarting...");
         ESP.restart();
-        
     }
 
     // Read and send GGA sentences
     while (Serial2.available()) {
         char ch = Serial2.read();
+
+        // copy GNSS data to Serial.
+        Serial1.print(ch);
+        // When complete NMEA sentence is received parse sentense and process relevant results
         if (ch == '\n') {
-            ggaBuffer[ggaIndex] = '\0';
-            if (strstr(ggaBuffer, "$GPGGA") != NULL) {
-                ntrip_c.sendGGA(ggaBuffer);
+            // Ensure that the buffer is "\0" terminated. 
+            nmeaBuffer[nmeaBufferIndex] = '\0';
+            // Process relevant NMEA sentences
+            if (strstr(nmeaBuffer, "$GNGGA") != NULL) {
+                
+                // Check if it is time to send GGA sentence to NTRIP server
+                // Send GGA sentence to NTRIP server every GGA_SEND_INTERVAL milliseconds
+                unsigned long currentTime = millis();
+                if (currentTime - lastGGASendTime >= GGA_SEND_INTERVAL) {
+                    ntrip_c.sendGGA(nmeaBuffer); // Send the GGA sentence to NTRIP server
+                    lastGGASendTime = currentTime; // Update the last GGA send time
+                }
+
+                #ifdef DEBUG
+                // Send GGA data to Serial for debug
+                Serial.println(nmeaBuffer); // Send the complete GGA sentence to Serial
+                #endif
+            } else if (strstr(nmeaBuffer, "$GNGSA") != NULL) { // GNSS DOP and Active Satellites
+                // Send GST data to Serial for debug
+                #ifdef DEBUG
+                Serial.println(nmeaBuffer); // Send the complete GST sentence to Serial
+                #endif
+            } else if (strstr(nmeaBuffer, "$GNVTG") != NULL) { // Course Over Ground and Ground Speed
+                // Send RMC data to Serial for debug
+                #ifdef DEBUG
+                Serial.println(nmeaBuffer); // Send the complete RMC sentence to Serial
+                #endif
             }
-            ggaIndex = 0;
+
+
+            // reset Indexe for buffer to restart colecting NMEA sentence
+            nmeaBufferIndex = 0;
         } else {
-            if (ggaIndex < sizeof(ggaBuffer) - 1) {
-                ggaBuffer[ggaIndex++] = ch;
+            // Add character to buffer
+            if (nmeaBufferIndex < sizeof(nmeaBuffer) - 1) {
+                nmeaBuffer[nmeaBufferIndex++] = ch;
             }
         }
     }
