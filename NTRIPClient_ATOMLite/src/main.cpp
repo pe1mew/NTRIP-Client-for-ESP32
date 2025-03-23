@@ -1,4 +1,4 @@
-// #define Debug  // Add this line to enable debug information
+#define Debug  // Add this line to enable debug information
 
 // --------------------------------------------------------------------
 //   This file is part of the PE1MEW NTRIP Client.
@@ -59,6 +59,7 @@
 #include <WiFi.h>
 #include <WiFiManager.h>
 #include "NTRIPClient.h"
+#include <PubSubClient.h>
 #include <Adafruit_NeoPixel.h>
 #include <ArduinoJson.h>
 #include <FS.h>
@@ -78,20 +79,27 @@
 Adafruit_NeoPixel pixels(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800); ///< NeoPixel LED object
 NTRIPClient ntrip_c; ///< NTRIPClient object
 
+WiFiClient espClient;
+PubSubClient mqttClient(espClient);
+
 // Configuration variables
-char _wifiSsid[32] = {'\0'};      ///< WiFi SSID
-char _wifiPassword[32] = {'\0'};  ///< WiFi password
-char _ntripHost[32] = {'\0'};      ///< NTRIP server host
+char _wifiSsid[32] = {'\0'};        ///< WiFi SSID
+char _wifiPassword[32] = {'\0'};    ///< WiFi password
+char _ntripHost[32] = {'\0'};       ///< NTRIP server host
 int  _ntripHttpPort = {0};          ///< NTRIP server port
-char _ntripMountPoint[32] = {'\0'};    ///< NTRIP mountpoint
-char _ntripUser[32] = {'\0'};      ///< NTRIP username
-char _ntripPassword[32] = {'\0'};    ///< NTRIP password
+char _ntripMountPoint[32] = {'\0'}; ///< NTRIP mountpoint
+char _ntripUser[32] = {'\0'};       ///< NTRIP username
+char _ntripPassword[32] = {'\0'};   ///< NTRIP password
+char _mqttBroker[32] = {'\0'};      ///< MQTT broker
+char _mqttUser[32] = {'\0'};        ///< MQTT username
+char _mqttPassword[32] = {'\0'};    ///< MQTT password
+char _mqttTopic[64] = {'\0'};       ///< MQTT topic
 
 // For reading and sending GGA sentences
 static char nmeaBuffer[256] = {'\0'};
 static int nmeaBufferIndex = {0};
 
-#define LED_OFF_TIME_MS 500 ///< Time in milliseconds to turn off LED after last data received
+#define LED_OFF_TIME_MS 200 ///< Time in milliseconds to turn off LED after last data received
 #define NTRIP_TIMEOUT_MS 60000 ///< Time in milliseconds to reset system if no NTRIP data is received
 
 // Flag to track receiving state
@@ -107,6 +115,35 @@ bool configMode = false;
 
 unsigned long lastGGASendTime = 0; ///< Variable to store the last GGA send time
 const unsigned long GGA_SEND_INTERVAL = 300000; ///< 5 minutes in milliseconds
+
+/**
+ * @brief Print the current configuration to the serial output.
+ */
+void printConfig() {
+    Serial.println("Current Configuration:");
+    Serial.print("WiFi SSID: ");
+    Serial.println(_wifiSsid);
+    Serial.print("WiFi Password: ");
+    Serial.println(_wifiPassword);
+    Serial.print("NTRIP Host: ");
+    Serial.println(_ntripHost);
+    Serial.print("NTRIP Port: ");
+    Serial.println(_ntripHttpPort);
+    Serial.print("NTRIP Mountpoint: ");
+    Serial.println(_ntripMountPoint);
+    Serial.print("NTRIP Username: ");
+    Serial.println(_ntripUser);
+    Serial.print("NTRIP Password: ");
+    Serial.println(_ntripPassword);
+    Serial.print("MQTT Broker: ");
+    Serial.println(_mqttBroker);
+    Serial.print("MQTT Username: ");
+    Serial.println(_mqttUser);
+    Serial.print("MQTT Password: ");
+    Serial.println(_mqttPassword);
+    Serial.print("MQTT Topic: ");
+    Serial.println(_mqttTopic);
+}
 
 /**
  * @brief Load configuration from SPIFFS.
@@ -141,6 +178,14 @@ void loadConfig() {
     strlcpy(_ntripMountPoint, doc["ntrip"]["mntpnt"], sizeof(_ntripMountPoint));
     strlcpy(_ntripUser, doc["ntrip"]["user"], sizeof(_ntripUser));
     strlcpy(_ntripPassword, doc["ntrip"]["passwd"], sizeof(_ntripPassword));
+    strlcpy(_mqttBroker, doc["mqtt"]["host"], sizeof(_mqttBroker));
+    strlcpy(_mqttUser, doc["mqtt"]["user"], sizeof(_mqttUser));
+    strlcpy(_mqttPassword, doc["mqtt"]["passwd"], sizeof(_mqttPassword));
+    strlcpy(_mqttTopic, doc["mqtt"]["topic"], sizeof(_mqttTopic));
+
+    #ifdef Debug
+    printConfig();
+    #endif
 }
 
 /**
@@ -155,6 +200,11 @@ void saveConfig() {
     doc["ntrip"]["mntpnt"] = _ntripMountPoint;
     doc["ntrip"]["user"] = _ntripUser;
     doc["ntrip"]["passwd"] = _ntripPassword;
+    doc["mqtt"]["host"] = _mqttBroker;
+    doc["mqtt"]["user"] = _mqttUser;
+    doc["mqtt"]["passwd"] = _mqttPassword;
+    doc["mqtt"]["topic"] = _mqttTopic;
+
 
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {
@@ -163,27 +213,6 @@ void saveConfig() {
     }
 
     serializeJson(doc, configFile);
-}
-
-/**
- * @brief Print the current configuration to the serial output.
- */
-void printConfig() {
-    Serial.println("Current Configuration:");
-    Serial.print("WiFi SSID: ");
-    Serial.println(_wifiSsid);
-    Serial.print("WiFi Password: ");
-    Serial.println(_wifiPassword);
-    Serial.print("NTRIP Host: ");
-    Serial.println(_ntripHost);
-    Serial.print("NTRIP Port: ");
-    Serial.println(_ntripHttpPort);
-    Serial.print("NTRIP Mountpoint: ");
-    Serial.println(_ntripMountPoint);
-    Serial.print("NTRIP Username: ");
-    Serial.println(_ntripUser);
-    Serial.print("NTRIP Password: ");
-    Serial.println(_ntripPassword);
 }
 
 /**
@@ -213,6 +242,10 @@ void configurationMode(const bool buttonPressed = false) {
     WiFiManagerParameter custom_mntpnt("mntpnt", "NTRIP Mountpoint", _ntripMountPoint, sizeof(_ntripMountPoint));
     WiFiManagerParameter custom_user("user", "NTRIP Username", _ntripUser, sizeof(_ntripUser));
     WiFiManagerParameter custom_passwd("passwd", "NTRIP Password", _ntripPassword, sizeof(_ntripPassword));
+    WiFiManagerParameter custom_mqtt_broker("mqtt_broker", "MQTT Broker", _mqttBroker, sizeof(_mqttBroker));
+    WiFiManagerParameter custom_mqtt_user("mqtt_user", "MQTT Username", _mqttUser, sizeof(_mqttUser));
+    WiFiManagerParameter custom_mqtt_passwd("mqtt_passwd", "MQTT Password", _mqttPassword, sizeof(_mqttPassword));
+    WiFiManagerParameter custom_mqtt_topic("mqtt_topic", "MQTT Topic", _mqttTopic, sizeof(_mqttTopic));
 
     // Add custom parameters to WiFiManager
     wifiManager.addParameter(&custom_host);
@@ -220,6 +253,10 @@ void configurationMode(const bool buttonPressed = false) {
     wifiManager.addParameter(&custom_mntpnt);
     wifiManager.addParameter(&custom_user);
     wifiManager.addParameter(&custom_passwd);
+    wifiManager.addParameter(&custom_mqtt_broker);
+    wifiManager.addParameter(&custom_mqtt_user);
+    wifiManager.addParameter(&custom_mqtt_passwd);
+    wifiManager.addParameter(&custom_mqtt_topic);
 
     wifiManager.setSaveConfigCallback(saveConfigCallback);
     wifiManager.setBreakAfterConfig(true);
@@ -249,6 +286,11 @@ void configurationMode(const bool buttonPressed = false) {
         strlcpy(_ntripMountPoint, custom_mntpnt.getValue(), sizeof(_ntripMountPoint));
         strlcpy(_ntripUser, custom_user.getValue(), sizeof(_ntripUser));
         strlcpy(_ntripPassword, custom_passwd.getValue(), sizeof(_ntripPassword));
+        strlcpy(_mqttBroker, custom_mqtt_broker.getValue(), sizeof(_mqttBroker));
+        strlcpy(_mqttUser, custom_mqtt_user.getValue(), sizeof(_mqttUser));
+        strlcpy(_mqttPassword, custom_mqtt_passwd.getValue(), sizeof(_mqttPassword));
+        strlcpy(_mqttTopic, custom_mqtt_topic.getValue(), sizeof(_mqttTopic));
+        
         // Save globals to SPIFFS
         saveConfig();
         ESP.restart();
@@ -257,6 +299,21 @@ void configurationMode(const bool buttonPressed = false) {
     printConfig();
     #endif
 }
+
+void reconnectMQTT() {
+    while (!mqttClient.connected()) {
+        Serial.print("   INFO: Attempting MQTT connection...");
+        if (mqttClient.connect("NTRIPClient", _mqttUser, _mqttPassword)) {
+            Serial.println("connected");
+        } else {
+            Serial.print("Failed, rc=");
+            Serial.print(mqttClient.state());
+            Serial.println(" try again in 5 seconds");
+            delay(5000);
+        }
+    }
+}
+
 
 /**
  * @brief Setup function to initialize the system.
@@ -271,6 +328,10 @@ void setup() {
     Serial2.begin(460800, SERIAL_8N1, RXD_PIN, TXD_PIN); // UART2 on GPIO21/22
     delay(10);
 
+    // Initialize MQTT client
+    mqttClient.setServer(_mqttBroker, 1883);
+    reconnectMQTT();
+        
     // Initialize NeoPixel
     pixels.begin();
     pixels.setPixelColor(0, pixels.Color(255, 0, 0)); // Red for WiFi disconnected
