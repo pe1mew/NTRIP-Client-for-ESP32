@@ -264,7 +264,8 @@ void setup() {
     delay(10);
 
     // Initialize Serial2 for NTRIPClient
-    Serial2.begin(115200, SERIAL_8N1, RXD_PIN, TXD_PIN); // UART2 on GPIO21/22
+    // Quectel LG290P module uses UART2 for NTRIP communication at 460800 bps
+    Serial2.begin(460800, SERIAL_8N1, RXD_PIN, TXD_PIN); // UART2 on GPIO21/22
     delay(10);
 
     // Initialize NeoPixel
