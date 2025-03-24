@@ -7,7 +7,14 @@
         "host": "host",
         "port": 2101,
         "mntpnt": "mountpoint",
-        "user": "user",
-        "passwd": "user_password"
+        "user": "ntrip_user",
+        "passwd": "ntrip_user_password"
+    },
+    "mqtt": {
+        "broker": "broker",
+        "port": 1883,
+        "topic": "/topic",
+        "user": "mqtt_user",
+        "passwd": "mqtt_user_password"
     }
 }

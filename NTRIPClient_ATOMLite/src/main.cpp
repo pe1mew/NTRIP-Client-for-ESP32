@@ -116,6 +116,8 @@ bool configMode = false;
 unsigned long lastGGASendTime = 0; ///< Variable to store the last GGA send time
 const unsigned long GGA_SEND_INTERVAL = 300000; ///< 5 minutes in milliseconds
 
+IPAddress mqttBrokerIP; // Variable to store the MQTT broker IP address
+
 /**
  * @brief Print the current configuration to the serial output.
  */
@@ -178,7 +180,8 @@ void loadConfig() {
     strlcpy(_ntripMountPoint, doc["ntrip"]["mntpnt"], sizeof(_ntripMountPoint));
     strlcpy(_ntripUser, doc["ntrip"]["user"], sizeof(_ntripUser));
     strlcpy(_ntripPassword, doc["ntrip"]["passwd"], sizeof(_ntripPassword));
-    strlcpy(_mqttBroker, doc["mqtt"]["host"], sizeof(_mqttBroker));
+    strlcpy(_mqttBroker, doc["mqtt"]["broker"], sizeof(_mqttBroker));
+    mqttBrokerIP.fromString(_mqttBroker); // Convert string to IP address
     strlcpy(_mqttUser, doc["mqtt"]["user"], sizeof(_mqttUser));
     strlcpy(_mqttPassword, doc["mqtt"]["passwd"], sizeof(_mqttPassword));
     strlcpy(_mqttTopic, doc["mqtt"]["topic"], sizeof(_mqttTopic));
@@ -200,7 +203,7 @@ void saveConfig() {
     doc["ntrip"]["mntpnt"] = _ntripMountPoint;
     doc["ntrip"]["user"] = _ntripUser;
     doc["ntrip"]["passwd"] = _ntripPassword;
-    doc["mqtt"]["host"] = _mqttBroker;
+    doc["mqtt"]["broker"] = mqttBrokerIP.toString(); // Convert IP address to string
     doc["mqtt"]["user"] = _mqttUser;
     doc["mqtt"]["passwd"] = _mqttPassword;
     doc["mqtt"]["topic"] = _mqttTopic;
@@ -300,6 +303,9 @@ void configurationMode(const bool buttonPressed = false) {
     #endif
 }
 
+/**
+ * @brief Initialize or reconnect to the MQTT broker.
+ */
 void reconnectMQTT() {
     while (!mqttClient.connected()) {
         Serial.print("   INFO: Attempting MQTT connection...");
@@ -308,8 +314,9 @@ void reconnectMQTT() {
         } else {
             Serial.print("Failed, rc=");
             Serial.print(mqttClient.state());
-            Serial.println(" try again in 5 seconds");
-            delay(5000);
+            // Serial.println(" try again in 5 seconds");
+            // delay(5000);
+            break;
         }
     }
 }
@@ -328,10 +335,6 @@ void setup() {
     Serial2.begin(460800, SERIAL_8N1, RXD_PIN, TXD_PIN); // UART2 on GPIO21/22
     delay(10);
 
-    // Initialize MQTT client
-    mqttClient.setServer(_mqttBroker, 1883);
-    reconnectMQTT();
-        
     // Initialize NeoPixel
     pixels.begin();
     pixels.setPixelColor(0, pixels.Color(255, 0, 0)); // Red for WiFi disconnected
@@ -375,6 +378,10 @@ void setup() {
     Serial.println("   INFO: Requesting MountPoint is OK");
     pixels.setPixelColor(0, pixels.Color(0, 0, 255)); // Blue for NTRIP connected and receiving
     pixels.show();
+
+    // Initialize MQTT client
+    mqttClient.setServer(mqttBrokerIP, 1883);
+    reconnectMQTT();
 }
 
 /**
@@ -460,7 +467,6 @@ void loop() {
                 #endif
             }
 
-
             // reset Indexe for buffer to restart colecting NMEA sentence
             nmeaBufferIndex = 0;
         } else {
@@ -470,4 +476,10 @@ void loop() {
             }
         }
     }
+
+    // Handle MQTT client
+    if (!mqttClient.connected()) {
+        reconnectMQTT();
+    }
+    mqttClient.loop(); // Ensure the MQTT client is processing incoming messages
 }
