@@ -96,10 +96,17 @@ char _mqttPassword[32] = {'\0'};    ///< MQTT password
 char _mqttTopic[64] = {'\0'};       ///< MQTT topic
 
 // For reading and sending GGA sentences
-static char nmeaBuffer[256] = {'\0'};
+static char nmeaBuffer[256] = {'\0'};   ///< Buffer to store NMEA sentences
+static char ggaBuffer[256] = {'\0'};    ///< Buffer to store GGA sentences
+static char rmcBuffer[256] = {'\0'};    ///< Buffer to store RMC sentences
+static char vtgBuffer[256] = {'\0'};    ///< Buffer to store VTG sentences
 static int nmeaBufferIndex = {0};
+bool ggaReceived = false;
+bool rmcReceived = false;
+bool vtgReceived = false;
 
-#define LED_OFF_TIME_MS 200 ///< Time in milliseconds to turn off LED after last data received
+
+#define LED_OFF_TIME_MS 100 ///< Time in milliseconds to turn off LED after last data received
 #define NTRIP_TIMEOUT_MS 60000 ///< Time in milliseconds to reset system if no NTRIP data is received
 
 // Flag to track receiving state
@@ -115,6 +122,8 @@ bool configMode = false;
 
 unsigned long lastGGASendTime = 0; ///< Variable to store the last GGA send time
 const unsigned long GGA_SEND_INTERVAL = 300000; ///< 5 minutes in milliseconds
+
+unsigned long sequenceNumber = 0;   ///< Variable to store the sequence number for the JSON data
 
 IPAddress mqttBrokerIP; // Variable to store the MQTT broker IP address
 
@@ -307,17 +316,11 @@ void configurationMode(const bool buttonPressed = false) {
  * @brief Initialize or reconnect to the MQTT broker.
  */
 void reconnectMQTT() {
-    while (!mqttClient.connected()) {
-        Serial.print("   INFO: Attempting MQTT connection...");
-        if (mqttClient.connect("NTRIPClient", _mqttUser, _mqttPassword)) {
-            Serial.println("connected");
-        } else {
-            Serial.print("Failed, rc=");
-            Serial.print(mqttClient.state());
-            // Serial.println(" try again in 5 seconds");
-            // delay(5000);
-            break;
-        }
+    if (mqttClient.connect("NTRIPClient", _mqttUser, _mqttPassword)) {
+        Serial.println("connected");
+    } else {
+        Serial.print("Failed, rc=");
+        Serial.print(mqttClient.state());
     }
 }
 
@@ -355,7 +358,7 @@ void setup() {
     pixels.show();
     
     // Request SourceTable from NTRIP server
-    Serial.println("   INFO: Requesting SourceTable.");
+    Serial.print("   INFO: Requesting SourceTable from NTRIP server: ");
     if(ntrip_c.reqSrcTbl(_ntripHost, _ntripHttpPort)) {
         char buffer[512];
         delay(5);
@@ -364,7 +367,7 @@ void setup() {
             Serial.print(buffer); 
         }
     } else {
-        Serial.println("  ERROR: SourceTable request error");
+        Serial.print("  ERROR: SourceTable request error: ");
     }
     Serial.print("   INFO: Requesting SourceTable is OK\n");
     ntrip_c.stop(); // Need to call "stop" function for next request.
@@ -451,24 +454,157 @@ void loop() {
                     lastGGASendTime = currentTime; // Update the last GGA send time
                 }
 
+                strlcpy(ggaBuffer, nmeaBuffer, sizeof(ggaBuffer)); // Copy GGA sentence to buffer
+                ggaReceived = true; // Set flag to indicate that GGA sentence is received
+
+                // mqttClient.publish("ntrip/gga", nmeaBuffer); // Send the GGA sentence to MQTT broker
+
                 #ifdef DEBUG
                 // Send GGA data to Serial for debug
                 Serial.println(nmeaBuffer); // Send the complete GGA sentence to Serial
                 #endif
-            } else if (strstr(nmeaBuffer, "$GNGSA") != NULL) { // GNSS DOP and Active Satellites
-                // Send GST data to Serial for debug
-                #ifdef DEBUG
-                Serial.println(nmeaBuffer); // Send the complete GST sentence to Serial
-                #endif
-            } else if (strstr(nmeaBuffer, "$GNVTG") != NULL) { // Course Over Ground and Ground Speed
+
+            } else if (strstr(nmeaBuffer, "$GNRMC") != NULL) { // Recommended Minimum Navigation Information
+
+                strlcpy(rmcBuffer, nmeaBuffer, sizeof(rmcBuffer)); // Copy RMC sentence to buffer
+                rmcReceived = true; // Set flag to indicate that RMC sentence is received
+
                 // Send RMC data to Serial for debug
                 #ifdef DEBUG
                 Serial.println(nmeaBuffer); // Send the complete RMC sentence to Serial
                 #endif
+            } else if (strstr(nmeaBuffer, "$GNVTG") != NULL) { // Course Over Ground and Ground Speed
+
+                strlcpy(vtgBuffer, nmeaBuffer, sizeof(vtgBuffer)); // Copy VTG sentence to buffer
+                vtgReceived = true; // Set flag to indicate that VTG sentence is received
+
+                // Send RMC data to Serial for debug
+                #ifdef DEBUG
+                Serial.println(nmeaBuffer); // Send the complete RMC sentence to Serial
+                #endif
+
             }
 
             // reset Indexe for buffer to restart colecting NMEA sentence
             nmeaBufferIndex = 0;
+
+            if(ggaReceived && rmcBuffer && vtgReceived) {
+                // Reset flags
+                ggaReceived = false;
+                rmcReceived = false;
+                vtgReceived = false;
+
+                // Parse GGA sentence
+                char* token = strtok(nmeaBuffer, ",");
+                int fieldIndex = 0;
+                double latitude = 0.0;
+                double longitude = 0.0;
+                double altitude = 0.0;
+                int fixType = 0;
+                int satellites = 0;
+                double hdop = 0.0;
+                char timeBuffer[11] = {0};
+
+                while (token != NULL) {
+                    switch (fieldIndex) {
+                        case 1:
+                            strncpy(timeBuffer, token, sizeof(timeBuffer) - 1);
+                            break;
+                        case 2:
+                            latitude = atof(token);
+                            break;
+                        case 4:
+                            longitude = atof(token);
+                            break;
+                        case 9:
+                            altitude = atof(token);
+                            break;
+                        case 6:
+                            fixType = atoi(token);
+                            break;
+                        case 7:
+                            satellites = atoi(token);
+                            break;
+                        case 8:
+                            hdop = atof(token);
+                            break;
+                    }
+                    token = strtok(NULL, ",");
+                    fieldIndex++;
+                }
+
+                // Parse time from GGA sentence
+                int hours = (timeBuffer[0] - '0') * 10 + (timeBuffer[1] - '0');
+                int minutes = (timeBuffer[2] - '0') * 10 + (timeBuffer[3] - '0');
+                int seconds = (timeBuffer[4] - '0') * 10 + (timeBuffer[5] - '0');
+                int milliseconds = (timeBuffer[7] - '0') * 100 + (timeBuffer[8] - '0') * 10 + (timeBuffer[9] - '0');
+
+                
+                // Get current date
+                char* token = strtok(rmcBuffer, ",");
+                int fieldIndex = 0;
+                char dateBuffer[7] = {0};
+                int year = 2025; // Replace with actual year
+                int month = 3; // Replace with actual month
+                int day = 24; // Replace with actual day
+
+                while (token != NULL) {
+                    switch (fieldIndex) {
+                        case 9:
+                            strncpy(dateBuffer, token, sizeof(dateBuffer) - 1);
+                            break;
+                    }
+                    token = strtok(NULL, ",");
+                    fieldIndex++;
+                }
+            
+                if (strlen(dateBuffer) == 6) {
+                    day = (dateBuffer[0] - '0') * 10 + (dateBuffer[1] - '0');
+                    month = (dateBuffer[2] - '0') * 10 + (dateBuffer[3] - '0');
+                    year = 2000 + (dateBuffer[4] - '0') * 10 + (dateBuffer[5] - '0');
+                }
+
+                // Format timestamp
+                char timestamp[24];
+                snprintf(timestamp, sizeof(timestamp), "%04d-%02d-%02d %02d:%02d:%02d.%03d", year, month, day, hours, minutes, seconds, milliseconds);
+
+                // Parse VTG sentence
+                token = strtok(vtgBuffer, ",");
+                fieldIndex = 0;
+                double speed = 0.0;
+                double direction = 0.0;
+
+                while(token != NULL) {
+                    switch (fieldIndex) {
+                        case 7:
+                            speed = atof(token);
+                            break;
+                        case 1:
+                            direction = atof(token);
+                            break;
+                    }
+                    token = strtok(NULL, ",");
+                    fieldIndex++;
+                }
+
+                // Collect data and format it into a JSON structure
+                DynamicJsonDocument doc(1024);
+                doc["timestamp"] = timestamp;
+                doc["latitude"] = latitude;
+                doc["longitude"] = longitude;
+                doc["altitude"] = altitude;
+                doc["fix_type"] = fixType;
+                doc["speed"] = speed; // Replace with actual speed value
+                doc["direction"] = direction; // Replace with actual direction value
+                doc["satellites"] = satellites;
+                doc["hdop"] = hdop;
+                doc["sequence_number"] = sequenceNumber++;
+
+                String jsonString;
+                serializeJson(doc, jsonString);
+                mqttClient.publish(_mqttTopic, jsonString.c_str());
+            }
+
         } else {
             // Add character to buffer
             if (nmeaBufferIndex < sizeof(nmeaBuffer) - 1) {
