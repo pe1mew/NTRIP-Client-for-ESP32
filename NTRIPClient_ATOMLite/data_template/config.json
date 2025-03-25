@@ -13,7 +13,7 @@
     "mqtt": {
         "broker": "broker",
         "port": 1883,
-        "topic": "/topic",
+        "topic": "ntripclient",
         "user": "mqtt_user",
         "passwd": "mqtt_user_password"
     }

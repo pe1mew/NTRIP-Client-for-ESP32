@@ -485,13 +485,16 @@ void loop() {
 
             }
 
-            // reset Indexe for buffer to restart colecting NMEA sentence
+            // reset Index for buffer to restart colecting NMEA sentence
             nmeaBufferIndex = 0;
 
+            // Check if all relevant NMEA sentences are received
+            // If all sentences are received, parse the data and send it to the MQTT broker
             if(ggaReceived && rmcBuffer && vtgReceived) {
                 // Reset flags
                 ggaReceived = false;
-                rmcReceived = false;
+                // Because RMC is only used to get the date, it is not necessary to reset the flag
+                // rmcReceived = false;
                 vtgReceived = false;
 
                 // Parse GGA sentence
@@ -541,12 +544,12 @@ void loop() {
 
                 
                 // Get current date
-                char* token = strtok(rmcBuffer, ",");
-                int fieldIndex = 0;
+                token = strtok(rmcBuffer, ",");
+                fieldIndex = 0;
                 char dateBuffer[7] = {0};
-                int year = 2025; // Replace with actual year
-                int month = 3; // Replace with actual month
-                int day = 24; // Replace with actual day
+                int year = 2025; 
+                int month = 3;
+                int day = 24;
 
                 while (token != NULL) {
                     switch (fieldIndex) {
@@ -577,7 +580,7 @@ void loop() {
                 while(token != NULL) {
                     switch (fieldIndex) {
                         case 7:
-                            speed = atof(token);
+                            speed = atof(token) / 3.6; // Convert speed from km/h to m/s
                             break;
                         case 1:
                             direction = atof(token);
@@ -589,17 +592,17 @@ void loop() {
 
                 // Collect data and format it into a JSON structure
                 DynamicJsonDocument doc(1024);
-                doc["timestamp"] = timestamp;
-                doc["latitude"] = latitude;
-                doc["longitude"] = longitude;
-                doc["altitude"] = altitude;
+                doc["id"] = sequenceNumber++;
+                doc["daytime"] = timestamp;
+                doc["lat"] = latitude;
+                doc["lon"] = longitude;
+                doc["alt"] = altitude;
                 doc["fix_type"] = fixType;
-                doc["speed"] = speed; // Replace with actual speed value
-                doc["direction"] = direction; // Replace with actual direction value
-                doc["satellites"] = satellites;
+                doc["speed"] = speed;
+                doc["dir"] = direction;
+                doc["sats"] = satellites;
                 doc["hdop"] = hdop;
-                doc["sequence_number"] = sequenceNumber++;
-
+                
                 String jsonString;
                 serializeJson(doc, jsonString);
                 mqttClient.publish(_mqttTopic, jsonString.c_str());
