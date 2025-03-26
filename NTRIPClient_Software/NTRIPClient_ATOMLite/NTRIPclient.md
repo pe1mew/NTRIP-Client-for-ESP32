@@ -1,20 +1,31 @@
 # NTRIP Client Operation Manual
 
 ## Introduction
-The NTRIP (Networked Transport of RTCM via Internet Protocol) client is designed to receive RTCM correction data from an NTRIP caster and provide it to GNSS receivers for improved positioning accuracy.
+The NTRIP (Networked Transport of RTCM via Internet Protocol) client is designed to receive RTCM correction data from an NTRIP caster, provide it to GNSS receivers for improved positioning accuracy, and send position information of the GNSS receiver to a MQTT broker. 
 
 ## Requirements
 - A device running the NTRIP client firmware (e.g., ATOM Lite).
 - Access to an NTRIP caster with valid credentials (host, port, username, password, and mountpoint).
+- Access to an MQTT broker with valid credentials (host, port, username, password, and topic).
 - A stable internet connection (Wi-Fi or other supported methods).
 - A GNSS receiver capable of processing RTCM correction data.
 
 ## Setup Instructions
 
 ### 1. Configure Wi-Fi
-1. Power on the device.
-2. Connect to the device's configuration interface (e.g., via serial terminal or web interface, depending on the implementation).
-3. Enter the Wi-Fi SSID and password to connect the device to the internet.
+1. When the NTRIP client boots up, it tries to connect to a previously saved WiFi network.
+2. If no known network is found, it creates a WiFi Access Point (AP) with:
+   - **SSID**: "NTRIPClient_Config"
+   - **Password**: none
+3. Connect your phone or computer to this network.
+4. Open a browser and go to 192.168.4.1.
+5. Select your WiFi network, enter the password, and save the settings.
+
+When the NTRIP client is connected to a WiFi network:
+1. the config menu can be invoked by pressing the button on the NTRIP client for more than 3 seconds. 
+2. Connect your computer to the same network as the NTRIP client. 
+3. Open a browser and go to the IP-address of the NTRIP client. 
+4. Select a WiFi network, enter the password, and save the settings.
 
 ### 2. Configure NTRIP Caster Details
 1. Provide the following details for the NTRIP caster:
