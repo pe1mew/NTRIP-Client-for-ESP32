@@ -1,0 +1,85 @@
+@startuml
+start
+
+:Setup NTRIP Client;
+if (Button Pressed?) then (Yes)
+    #white:LED on;
+    :Start WiFiManager Portal;
+    :Restart ESP;
+    stop
+else (No)
+    :Connect to WiFi;
+    if (WiFi connected?) then (Yes)
+        #palegreen:LED on;
+    else (No)
+        #white:LED on;
+        :Start WiFiManager Portal;
+        :Restart ESP;
+        stop
+    end if
+endif
+
+:Request SourceTable from NTRIP Server;
+if (SourceTable Request Successful?) then (Yes)
+
+else (No)
+    :Restart ESP;
+    stop
+endif
+
+:Request Raw Data from MountPoint;
+if (MountPoint Request Successful?) then (Yes)
+    #lightblue:LED on;
+    :NTRIP Connected;
+else (No)
+    :Restart ESP;
+    stop
+endif
+
+:Connect to MQTT Broker;
+
+while (Loop Function Running)
+    if (Button Held for 3 Seconds?) then (Yes)
+        :Enter Configuration Mode;
+        :Restart ESP;
+        stop
+    endif
+    
+    :Read Data from NTRIP Server;
+    if (Data Received?) then (No)
+        if (NTRIP Data Timeout?) then (Yes)
+            :Restart ESP;
+            stop
+        else (No)
+        endif
+        #palegreen:Set LED;
+    else (Yes)
+        #lightblue:Set LED;
+        :Send NTRIP data to \nGNSS Receiver;
+    endif
+
+    if (NTRIP Connection Lost?) then (Yes)
+        :Restart ESP;
+        stop
+    endif
+
+    :Read data from GNSS;
+    if (Complete GGA data?) then (Yes)
+        if (Time to Send GGA?) then (Yes)
+            :Send GGA to \nNTRIP Server;
+        endif
+    endif
+
+    if (All Sentences Parsed?) then (Yes)
+        :Publish JSON to \nMQTT Broker;
+        :Send time data to \ndata acquisition unit;
+    endif
+
+    if (MQTT Disconnected?) then (Yes)
+        :Reconnect to MQTT Broker;
+    endif
+
+endwhile
+
+stop
+@enduml
