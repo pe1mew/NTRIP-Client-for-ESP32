@@ -4,7 +4,7 @@
 
 ## MQTT message
 
-The NTRIP Client send position information and metadata to the broker. This information is typcally shown below: 
+The NTRIP Client send position information and metadata to the broker. This information is typcally shown below. A description of the name-value pairs is presented after this. : 
 
 ```json
 {
@@ -51,6 +51,24 @@ The format **YYYY-MM-DD HH:mm:ss.sss** represents a **timestamp** with the follo
 
 #### Latitude longitude format
 
+Latitude and longitude is written in **degrees decimal degrees (DDD)** who are geographic coordinates used to specify locations on Earth. They are expressed as:  
+
+### **Format:**  
+```
+Latitude:   ±DD.DDDDDD
+Longitude: ±DDD.DDDDDD
+```
+
+- **Latitude (Lat)**: Ranges from **-90.000000** to **+90.000000**  
+  - **Positive (+)** → North of the Equator  
+  - **Negative (-)** → South of the Equator  
+- **Longitude (Lon)**: Ranges from **-180.000000** to **+180.000000**  
+  - **Positive (+)** → East of the Prime Meridian  
+  - **Negative (-)** → West of the Prime Meridian  
+
+### **Example:**  
+- **Latitude:** 37.774929 → **37.774929° N**  
+- **Longitude:** -122.419416 → **122.419416° W**  
 
 #### NMEA 0183 - GGA Sentence Fix Types
 The GGA sentence contains a field indicating the GPS fix type:
@@ -68,3 +86,15 @@ The GGA sentence contains a field indicating the GPS fix type:
 | **8** | Simulation mode |
 
 ## Time message to telemetry unit
+The message format is as follows:
+
+ - Control-A (0x01)
+ - Timestamp (string) formatted as Date-time format (as decribed above)
+ - CRC-16 (2 bytes, big-endian)
+ - Control-X (0x18)
+
+```
+   1                n               2      1
+[0x01][YYYY-MM-DD HH:MM:SS.SSSS][CRC-16][0x18]
+```
+

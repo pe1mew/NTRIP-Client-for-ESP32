@@ -65,6 +65,11 @@
 #include <FS.h>
 #include <SPIFFS.h>
 
+#include <stdint.h>
+#include <string.h>
+#include <Arduino.h>
+
+
 // NeoPixel LED configuration
 #define LED_PIN 27
 #define NUMPIXELS 1
@@ -324,6 +329,74 @@ void reconnectMQTT() {
     }
 }
 
+/**
+ * \brief Function to calculate CRC-16 for the given data.
+ * \param data Pointer to the data buffer.
+ * \param length Length of the data buffer.
+ * \return Calculated CRC-16 value.
+ */
+uint16_t calculateCRC16(const uint8_t* data, size_t length) {
+    uint16_t crc = 0xFFFF; // Initial value
+    const uint16_t polynomial = 0x1021; // CRC-16-CCITT polynomial
+
+    for (size_t i = 0; i < length; i++) {
+        crc ^= (data[i] << 8); // XOR byte into the top of crc
+
+        for (uint8_t bit = 0; bit < 8; bit++) {
+            if (crc & 0x8000) {
+                crc = (crc << 1) ^ polynomial;
+            } else {
+                crc = (crc << 1);
+            }
+        }
+    }
+
+    return crc;
+}
+
+/**
+ * \brief Function to compose the message with Control-A, timestamp, CRC-16, and Control-X.
+ * \param timestamp The timestamp string to be included in the message.
+ * \param outputBuffer The buffer to store the composed message.
+ * \param outputLength The length of the composed message.
+ * \details The message format is as follows:
+ * - Control-A (0x01)
+ * - Timestamp (string)
+ * - CRC-16 (2 bytes, big-endian)
+ * - Control-X (0x18)
+ * 
+ * 1. Prefix the message with a byte representing "Control-A" (0x01).
+ * 2. Append the timestamp to the message.
+ * 3. Calculate the CRC-16 over the bytes (excluding the "Control-A" prefix).
+ * 4. Append the CRC-16 result to the message.
+ * 5. Close the message with a byte representing "Control-X" (0x18).
+ */ 
+void composeMessage(const char* timestamp, uint8_t* outputBuffer, size_t& outputLength) {
+    const uint8_t controlA = 0x01; // Control-A
+    const uint8_t controlX = 0x18; // Control-X
+
+    // Start with Control-A
+    size_t index = 0;
+    outputBuffer[index++] = controlA;
+
+    // Append the timestamp
+    size_t timestampLength = strlen(timestamp);
+    memcpy(&outputBuffer[index], timestamp, timestampLength);
+    index += timestampLength;
+
+    // Calculate CRC-16 over the timestamp
+    uint16_t crc = calculateCRC16((const uint8_t*)timestamp, timestampLength);
+
+    // Append the CRC-16 (big-endian)
+    outputBuffer[index++] = (crc >> 8) & 0xFF; // High byte
+    outputBuffer[index++] = crc & 0xFF;        // Low byte
+
+    // Append Control-X
+    outputBuffer[index++] = controlX;
+
+    // Set the output length
+    outputLength = index;
+}
 
 /**
  * @brief Setup function to initialize the system.
@@ -497,6 +570,20 @@ void loop() {
                 // rmcReceived = false;
                 vtgReceived = false;
 
+                // The NMEA GGA sentence provides latitude and longitude in
+                // a specific format, and additional processing is required 
+                // to convert it into decimal degrees.
+                //
+                // NMEA Latitude and Longitude Format:
+                // 1. Latitude: ddmm.mmmm (degrees and minutes)
+                //    - dd: Degrees (2 digits)
+                //    - mm.mmmm: Minutes (up to 4 decimal places)
+                // 2. Longitude: dddmm.mmmm (degrees and minutes)
+                //    - ddd: Degrees (3 digits)
+                //    - mm.mmmm: Minutes (up to 4 decimal places)
+                // To convert these values into decimal degrees:
+                //  - Decimal Degrees = Degrees + (Minutes / 60)
+
                 // Parse GGA sentence
                 char* token = strtok(nmeaBuffer, ",");
                 int fieldIndex = 0;
@@ -507,33 +594,56 @@ void loop() {
                 int satellites = 0;
                 double hdop = 0.0;
                 char timeBuffer[11] = {0};
+                char latDirection = '\0';
+                char lonDirection = '\0';
 
                 while (token != NULL) {
                     switch (fieldIndex) {
-                        case 1:
+                        case 1: // Time
                             strncpy(timeBuffer, token, sizeof(timeBuffer) - 1);
                             break;
-                        case 2:
+                        case 2: // Latitude
                             latitude = atof(token);
                             break;
-                        case 4:
+                        case 3: // Latitude direction (N/S)
+                            latDirection = token[0];
+                            break;
+                        case 4: // Longitude
                             longitude = atof(token);
                             break;
-                        case 9:
+                        case 5: // Longitude direction (E/W)
+                            lonDirection = token[0];
+                            break;
+                        case 9: // Altitude
                             altitude = atof(token);
                             break;
-                        case 6:
+                        case 6: // Fix type
                             fixType = atoi(token);
                             break;
-                        case 7:
+                        case 7: // Satellites
                             satellites = atoi(token);
                             break;
-                        case 8:
+                        case 8: // HDOP
                             hdop = atof(token);
                             break;
                     }
                     token = strtok(NULL, ",");
                     fieldIndex++;
+                }
+
+                // Convert latitude and longitude to decimal degrees
+                int latDegrees = (int)(latitude / 100);
+                double latMinutes = latitude - (latDegrees * 100);
+                latitude = latDegrees + (latMinutes / 60.0);
+                if (latDirection == 'S') {
+                    latitude = -latitude; // South is negative
+                }
+
+                int lonDegrees = (int)(longitude / 100);
+                double lonMinutes = longitude - (lonDegrees * 100);
+                longitude = lonDegrees + (lonMinutes / 60.0);
+                if (lonDirection == 'W') {
+                    longitude = -longitude; // West is negative
                 }
 
                 // Parse time from GGA sentence
@@ -606,6 +716,21 @@ void loop() {
                 String jsonString;
                 serializeJson(doc, jsonString);
                 mqttClient.publish(_mqttTopic, jsonString.c_str());
+                
+                uint8_t message[64]; // Buffer to hold the composed message
+                size_t messageLength = 0;
+
+                // Compose the message
+                composeMessage(timestamp, message, messageLength);
+
+                // // Print the composed message as hex
+                // removed this code and left as an example for future use.
+                // Serial.print("   INFO: ");
+                // for (size_t i = 0; i < messageLength; i++) {
+                //     Serial.printf("%02X ", message[i]);
+                // }
+                // Serial.println();
+
             }
 
         } else {
