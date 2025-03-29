@@ -88,13 +88,13 @@ The GGA sentence contains a field indicating the GPS fix type:
 ## Time message to telemetry unit
 The message format is as follows:
 
- - Control-A (0x01)
- - Timestamp (string) formatted as Date-time format (as decribed above)
- - CRC-16 (2 bytes, big-endian)
- - Control-X (0x18)
+ - **Start-byte**: Control-A (0x01)
+ - **Timestamp**: (string) formatted as Date-time format (as decribed above)
+ - **CRC-16**: (2 bytes, big-endian) over Timestamp (Start-byte excluded)
+ - **Stop-byte**: Control-X (0x18)
 
 ```
-   1                n               2      1
+   1                n               2      1    <- bytes in payload
 [0x01][YYYY-MM-DD HH:MM:SS.SSSS][CRC-16][0x18]
 ```
 
