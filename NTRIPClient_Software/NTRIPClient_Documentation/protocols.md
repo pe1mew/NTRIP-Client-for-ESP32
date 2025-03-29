@@ -98,3 +98,25 @@ The message format is as follows:
 [0x01][YYYY-MM-DD HH:MM:SS.SSSS][CRC-16][0x18]
 ```
 
+For a **24-byte string**, **CRC-16** is often the better choice than **CRC-32**, unless you require extra-strong error detection.  
+
+**Comparison of CRC-16 vs. CRC-32 for a 15-byte string**  
+
+| Feature      | **CRC-16** | **CRC-32** |
+|-------------|-----------|-----------|
+| **Checksum Size** | 16 bits (2 bytes) | 32 bits (4 bytes) |
+| **Error Detection** | Good for small data, detects single-bit and burst errors | Stronger, but overkill for small data |
+| **Collision Probability** | Lower risk for short data | Even lower, but unnecessary for 15 bytes |
+| **Processing Speed** | Faster (less computational overhead) | Slightly slower due to larger checksum |
+
+**Why CRC-16 is Better in this application?**:
+1. **Sufficient Error Detection**:  
+   - For small payloads like 24 bytes, **CRC-16 is strong enough** to catch most transmission errors.  
+   - CRC-32 provides better protection but is **not needed** unless extremely high reliability is required.  
+2. **Lower Overhead**:  
+   - CRC-16 adds only **2 bytes**, while CRC-32 adds **4 bytes** to the message.  
+   - This makes CRC-16 more efficient in bandwidth-limited or low-memory environments.  
+3. **Faster Computation**:  
+   - CRC-16 is **lighter** in processing, making it ideal for embedded systems or low-power devices.  
+
+**Conclusion**: For a **24-byte string**, **CRC-16 is the better choice** in most cases due to its efficiency and sufficient error detection.
