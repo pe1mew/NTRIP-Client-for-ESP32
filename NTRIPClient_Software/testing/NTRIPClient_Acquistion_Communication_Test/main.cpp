@@ -28,36 +28,55 @@
 #include "../catch2/catch.hpp"
 #include "NTRIPClientCRC16.h"
 
+/*! 
+ * @struct TestCase
+ * @brief Represents a single test case for CRC-16 checksum calculation.
+ * 
+ * This structure is used to define the input data, expected output, and description
+ * for each test case in the unit tests for the CRC-16 checksum calculation function.
+ * 
+ * @var TestCase::data
+ * Pointer to the input data for the CRC-16 calculation.
+ * 
+ * @var TestCase::length
+ * The length of the input data in bytes.
+ * 
+ * @var TestCase::expectedCRC
+ * The expected CRC-16 checksum value for the given input data.
+ * 
+ * @var TestCase::description
+ * A brief description of the test case, used for documentation and debugging purposes.
+ */
+struct TestCase {
+    const uint8_t* data;      /*!< Pointer to the input data for the CRC-16 calculation. */
+    size_t length;            /*!< Length of the input data in bytes. */
+    uint16_t expectedCRC;     /*!< Expected CRC-16 checksum value. */
+    const char* description;  /*!< Description of the test case. */
+};
+
 TEST_CASE("calculateCRC16 computes correct CRC-16 checksum", "[CRC16]") {
-    SECTION("CRC-16 for ASCII '12345'") {
-        const uint8_t data[] = {0x31, 0x32, 0x33, 0x34, 0x35}; ///< HEX for ASCII for "12345"
-        size_t length = sizeof(data) / sizeof(data[0]);
-        uint16_t expectedCRC = 0x4560; ///< Expected CRC value for "12345"
-        REQUIRE(calculateCRC16(data, length) == expectedCRC);
-    }
+    TestCase testCases[] = {
+        {reinterpret_cast<const uint8_t*>("\x31\x32\x33\x34\x35"), 5, 0x4560, "CRC-16 for ASCII '12345'"},
+        {reinterpret_cast<const uint8_t*>(""), 0, 0xFFFF, "CRC-16 for empty data"},
+        {reinterpret_cast<const uint8_t*>("\x01"), 1, 0xF1D1, "CRC-16 for single byte"}
+    };
 
-    SECTION("CRC-16 for empty data") {
-        const uint8_t data[] = {};  ///< Empty data
-        size_t length = 0;
-        uint16_t expectedCRC = 0xFFFF; //< Expected CRC value for empty data
-        REQUIRE(calculateCRC16(data, length) == expectedCRC);
-    }
-
-    SECTION("CRC-16 for single byte") {
-        const uint8_t data[] = {0x01}; ///< Single byte data
-        size_t length = 1;
-        uint16_t expectedCRC =  0xF1D1; ///< Expected CRC value for single byte 0x01
-        REQUIRE(calculateCRC16(data, length) == expectedCRC);
+    for (const auto& testCase : testCases) {
+        SECTION(testCase.description) {
+            REQUIRE(calculateCRC16(testCase.data, testCase.length) == testCase.expectedCRC);
+        }
     }
 }
 
 TEST_CASE("CRC-16 for daytime message", "[CRC16]") {
-    SECTION("CRC-16 for ASCII '2025-03-30 10:27:06.500'") {
-        const uint8_t data[] = {0x32, 0x30, 0x32, 0x35, 0x2D, 0x30, 0x33, 0x2D,
-                                0x33, 0x30, 0x20, 0x31, 0x30, 0x3A, 0x32, 0x37,
-                                0x3A, 0x30, 0x36, 0x2E, 0x35, 0x30, 0x30}; ///< HEX for ASCII "2025-03-30 10:27:06.500"
-        size_t length = sizeof(data) / sizeof(data[0]);
-        uint16_t expectedCRC = 0x4597; ///< Expected CRC value for "2025-03-30 10:27:06.500"
-        REQUIRE(calculateCRC16(data, length) == expectedCRC);
+    TestCase testCases[] = {
+        {reinterpret_cast<const uint8_t*>("\x32\x30\x32\x35\x2D\x30\x33\x2D\x33\x30\x20\x31\x30\x3A\x32\x37\x3A\x30\x36\x2E\x35\x30\x30"), 
+         23, 0x4597, "CRC-16 for ASCII '2025-03-30 10:27:06.500'"}
+    };
+
+    for (const auto& testCase : testCases) {
+        SECTION(testCase.description) {
+            REQUIRE(calculateCRC16(testCase.data, testCase.length) == testCase.expectedCRC);
+        }
     }
 }
