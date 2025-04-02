@@ -70,7 +70,7 @@ TEST_CASE("calculateCRC16 computes correct CRC-16 checksum", "[CRC16]") {
 
 TEST_CASE("CRC-16 for daytime message", "[CRC16]") {
     TestCase testCases[] = {
-        {reinterpret_cast<const uint8_t*>("\x32\x30\x32\x35\x2D\x30\x33\x2D\x33\x30\x20\x31\x30\x3A\x32\x37\x3A\x30\x36\x2E\x35\x30\x30"), 
+        {reinterpret_cast<const uint8_t*>("\x32\x30\x32\x35\x2D\x30\x33\x2D\x33\x30\x20\x31\x30\x3A\x32\x37\x3A\x30\x36\x2E\x35\x30\x30"),
          23, 0x4597, "CRC-16 for ASCII '2025-03-30 10:27:06.500'"}
     };
 

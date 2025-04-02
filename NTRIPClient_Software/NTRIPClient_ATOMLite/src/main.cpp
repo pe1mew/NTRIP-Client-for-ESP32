@@ -687,13 +687,18 @@ void loop() {
                 double speed = 0.0;
                 double direction = 0.0;
 
-                while(token != NULL) {
+                while (token != NULL) {
                     switch (fieldIndex) {
-                        case 7:
-                            speed = atof(token) / 3.6; // Convert speed from km/h to m/s
-                            break;
-                        case 1:
+                        case 1: // Direction (true north)
                             direction = atof(token);
+                            break;
+                        case 2: // Validate 'T' field
+                            if (strcmp(token, "T") != 0) {
+                                direction = 0.0; // Invalid direction
+                            }
+                            break;
+                        case 7: // Speed in km/h
+                            speed = atof(token) / 3.6; // Convert speed from km/h to m/s
                             break;
                     }
                     token = strtok(NULL, ",");
