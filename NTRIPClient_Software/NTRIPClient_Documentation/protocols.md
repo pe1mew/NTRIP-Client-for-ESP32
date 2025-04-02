@@ -1,6 +1,52 @@
 # Protocols
 
-## Condiguration file
+## Configuration file
+
+The configuration file is a json struct that is stored in the file named `config.json`.
+The file is specifying settings for the **WiFi** connection, the **NTRIP Client**, and the **MQTT broker**.
+
+### Field specification
+
+```json
+{
+    "wifi": {
+        "ssid": "ssid",
+        "password": "wifi_password"
+    },
+    "ntrip": {
+        "host": "host",
+        "port": 2101,
+        "mntpnt": "mountpoint",
+        "user": "ntrip_user",
+        "passwd": "ntrip_user_password"
+    },
+    "mqtt": {
+        "broker": "broker",
+        "port": 1883,
+        "topic": "ntripclient",
+        "user": "mqtt_user",
+        "passwd": "mqtt_user_password"
+    }
+}
+```
+
+#### WiFi Configuration (`wifi`)
+- **ssid**: The SSID (name) of the WiFi network to connect to.
+- **password**: The password for the WiFi network.
+
+#### NTRIP Configuration (`ntrip`)
+- **host**: The hostname or IP address of the NTRIP caster.
+- **port**: The port number of the NTRIP caster (default is usually 2101).
+- **mntpnt**: The mountpoint to connect to on the NTRIP caster.
+- **user**: The username for NTRIP authentication.
+- **passwd**: The password for NTRIP authentication.
+
+#### MQTT Configuration (`mqtt`)
+- **broker**: The *IP address* of the MQTT broker. *The hostname of the broker cannot be used here!*
+- **port**: The port number of the MQTT broker (default is usually 1883).
+- **topic**: The MQTT topic to publish or subscribe to.
+- **user**: The username for MQTT authentication.
+- **passwd**: The password for MQTT authentication.
 
 ## MQTT message
 
@@ -17,9 +63,11 @@ The NTRIP Client send position information and metadata to the broker. This info
    "speed": 0,
    "dir": 334.2,
    "sats": 31,
-   "hdop": 0.48
+   "hdop": 0.48,
+   "age": 2.2
 }
 ```
+
 ### Field specification
 
  - **num**: Number (Integer), Incrementing number from the start of the NTRIP Client
@@ -32,6 +80,7 @@ The NTRIP Client send position information and metadata to the broker. This info
  - **dir**: Number (Float), Direction of the vehicle reletive to true North, in deg. 
  - **sats**: Number (Integer), Number of satellites in fix
  - **hdop**: Number (Float), Number (Integer)
+ - **age**: Time elapsed since the last differential correction was received in seconds
  
 
 #### Date-time format

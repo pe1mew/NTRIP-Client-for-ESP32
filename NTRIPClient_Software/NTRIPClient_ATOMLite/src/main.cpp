@@ -530,7 +530,7 @@ void loop() {
                 strlcpy(ggaBuffer, nmeaBuffer, sizeof(ggaBuffer)); // Copy GGA sentence to buffer
                 ggaReceived = true; // Set flag to indicate that GGA sentence is received
 
-                // mqttClient.publish("ntrip/gga", nmeaBuffer); // Send the GGA sentence to MQTT broker
+                // mqttClient.publish("ntripclient/gga", ggaBuffer); // Send the GGA sentence to MQTT broker
 
                 #ifdef DEBUG
                 // Send GGA data to Serial for debug
@@ -584,12 +584,15 @@ void loop() {
                 // To convert these values into decimal degrees:
                 //  - Decimal Degrees = Degrees + (Minutes / 60)
 
+                // Serial.println(nmeaBuffer); // Send the complete RMC sentence to Serial
+                
                 // Parse GGA sentence
-                char* token = strtok(nmeaBuffer, ",");
+                char* token = strtok(ggaBuffer, ",");
                 int fieldIndex = 0;
                 double latitude = 0.0;
                 double longitude = 0.0;
                 double altitude = 0.0;
+                double ageOfDifferentialData = 0.0;
                 int fixType = 0;
                 int satellites = 0;
                 double hdop = 0.0;
@@ -625,6 +628,9 @@ void loop() {
                             break;
                         case 8: // HDOP
                             hdop = atof(token);
+                            break;
+                        case 13: // Age of Differential Data
+                            ageOfDifferentialData = atof(token);
                             break;
                     }
                     token = strtok(NULL, ",");
@@ -717,7 +723,8 @@ void loop() {
                 doc["dir"] = direction;
                 doc["sats"] = satellites;
                 doc["hdop"] = hdop;
-                
+                doc["age"] = ageOfDifferentialData; // Add Age of Differential Data
+
                 String jsonString;
                 serializeJson(doc, jsonString);
                 mqttClient.publish(_mqttTopic, jsonString.c_str());

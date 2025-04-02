@@ -1,8 +1,33 @@
 # Configuration file config.json
 
-The `config.json` file is used to store the settings required for the Ntrip client to function properly. It contains three main sections: `wifi`, `ntrip`, and `mqtt`. Below is a detailed explanation of each section and its name-value pairs:
+The `config.json` file is used to store the settings required for the Ntrip client to function properly. It contains three main sections: `wifi`, `ntrip`, and `mqtt`. 
+
+```json
+{
+    "wifi": {
+        "ssid": "ssid",
+        "password": "wifi_password"
+    },
+    "ntrip": {
+        "host": "host",
+        "port": 2101,
+        "mntpnt": "mountpoint",
+        "user": "ntrip_user",
+        "passwd": "ntrip_user_password"
+    },
+    "mqtt": {
+        "broker": "broker",
+        "port": 1883,
+        "topic": "ntripclient",
+        "user": "mqtt_user",
+        "passwd": "mqtt_user_password"
+    }
+}
+```
 
 ## Configuration Details
+
+Below is a detailed explanation of each section and its name-value pairs:
 
 ### WiFi Configuration (`wifi`)
 - **ssid**: The SSID (name) of the WiFi network to connect to.
@@ -17,7 +42,7 @@ The `config.json` file is used to store the settings required for the Ntrip clie
 
 ### MQTT Configuration (`mqtt`)
 - **broker**: The *IP address* of the MQTT broker. *The hostname of the broker cannot be used here!*
-- **port**: The port number of the MQTT broker (default is usually 1883).
+- **port**: The port number of the MQTT broker (default is 1883).
 - **topic**: The MQTT topic to publish or subscribe to.
 - **user**: The username for MQTT authentication.
 - **passwd**: The password for MQTT authentication.
