@@ -17,28 +17,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Removed
 
-## [Version 0.0.2] - 2025-02-07
+## [Version 0.0.1] - 2025-04-06
 
 ### Added
-- added workshop for use of LoRaWAN tracket wirh TTN-Mapper in [ttnmapprgps.md](ttnmapprgps.md)
-
-### Changed
-- [readme.md(readme.md)] to point to the 2 workshops.
-- additions and completions to [ttnmapperapp.md](ttnmapperapp.md)
-
-### Fixed
-- *Nothing.*
-
-### Removed
-- *Nothing.*
-
-## [Version 0.0.1] - 2025-02-03
-
-### Added
-- Initial setup of workshop in [readme.md](readme.md) ready to be used.
-- added Creative Common Share Alike license and [LICENCE](LICENCE) file.
-- added rules for contribution in [contribution.md](contribution.md) file.
-- added code of conduct in [code_of_conduct.md](code_of_conduct.md) file.
+- Connects over WiFi to the internet. 
+- Receives NTRIP data from caster and forwards to GNSS module.
+- Forwards postion data and metadata over MQTT to a broker.
+- Sends siral timestamp with CRC-16 over serial port.
+- WiFi, NTrip-client, and MQTT-client ar configureable over WiFi Manager.
 
 ### Changed
 - *Nothing.*

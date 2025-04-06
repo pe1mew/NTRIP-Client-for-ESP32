@@ -78,8 +78,11 @@
 #define BUTTON_PIN 39
 
 // Second serial interface for NTRIPClient
-#define TXD_PIN 21
-#define RXD_PIN 22
+#define TXD2_PIN 21
+#define RXD2_PIN 22
+// GPIO23/19 for Serial1 (Telemetry unit)
+#define TXD1_PIN 19
+#define RXD1_PIN 23
 
 Adafruit_NeoPixel pixels(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800); ///< NeoPixel LED object
 NTRIPClient ntrip_c; ///< NTRIPClient object
@@ -408,7 +411,11 @@ void setup() {
 
     // Initialize Serial2 for NTRIPClient
     // Quectel LG290P module uses UART2 for NTRIP communication at 460800 bps
-    Serial2.begin(460800, SERIAL_8N1, RXD_PIN, TXD_PIN); // UART2 on GPIO21/22
+    Serial2.begin(460800, SERIAL_8N1, RXD2_PIN, TXD2_PIN); // UART2 on GPIO21/22
+    delay(10);
+
+    // Initialize Serial1 for telemetry unit
+    Serial1.begin(115200, SERIAL_8N1, RXD1_PIN, TXD1_PIN); // UART1 on GPIO23/19
     delay(10);
 
     // Initialize NeoPixel
@@ -510,8 +517,9 @@ void loop() {
     while (Serial2.available()) {
         char ch = Serial2.read();
 
-        // copy GNSS data to Serial.
-        Serial1.print(ch);
+        // // copy GNSS data to Serial.
+        // Serial1.print(ch);
+
         // When complete NMEA sentence is received parse sentense and process relevant results
         if (ch == '\n') {
             // Ensure that the buffer is "\0" terminated. 
@@ -735,13 +743,8 @@ void loop() {
                 // Compose the message
                 composeMessage(timestamp, message, messageLength);
 
-                // // Print the composed message as hex
-                // removed this code and left as an example for future use.
-                // Serial.print("   INFO: ");
-                // for (size_t i = 0; i < messageLength; i++) {
-                //     Serial.printf("%02X ", message[i]);
-                // }
-                // Serial.println();
+                // Send the composed message to Serial1
+                Serial1.write(message, messageLength);
 
             }
 
