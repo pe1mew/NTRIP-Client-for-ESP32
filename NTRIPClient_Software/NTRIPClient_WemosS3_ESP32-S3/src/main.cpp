@@ -69,35 +69,38 @@
 #include <string.h>
 #include <Arduino.h>
 
-// Define brightness level (10% of maximum brightness)
-#define LED_BRIGHTNESS 25  // Brightness level (0-255, where 255 is 100%)
+#include "hardwareConfig.h" // Include hardware configuration file
+#include "NTRIPClientCRC16.h" // Include the CRC-16 calculation header file
 
-// NeoPixel LED configuration
-#define LED_PIN 38  // GPIO 38 for the onboard WS2812 RGB LED
-#define NUMPIXELS 1
+// // Define brightness level (10% of maximum brightness)
+// #define LED_BRIGHTNESS 25  // Brightness level (0-255, where 255 is 100%)
+
+// // NeoPixel LED configuration
+// #define LED_PIN 38  // GPIO 38 for the onboard WS2812 RGB LED
+// #define NUMPIXELS 1
 
 Adafruit_NeoPixel pixels(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800); ///< NeoPixel LED object
 
-// Button configuration
-#define BUTTON_PIN 0  // GPIO0 for button input
+// // Button configuration
+// #define BUTTON_PIN 0        ///< GPIO0 for button input
 
-// Second serial interface for NTRIPClient
-#define TXD2_PIN 17  // Corrected to GPIO17 for UART2 TX
-#define RXD2_PIN 18  // Corrected to GPIO18 for UART2 RX
-// GPIO19/20 for Serial1 (Telemetry unit)
-#define TXD1_PIN 15  // Corrected to GPIO19 for UART1 TX
-#define RXD1_PIN 16  // Corrected to GPIO20 for UART1 RX
+// // Second serial interface for NTRIPClient
+// #define TXD2_PIN 17         ///< Corrected to GPIO17 for UART2 TX
+// #define RXD2_PIN 18         ///< Corrected to GPIO18 for UART2 RX
+// // GPIO19/20 for Serial1 (Telemetry unit)
+// #define TXD1_PIN 15         ///< Corrected to GPIO19 for UART1 TX
+// #define RXD1_PIN 16         ///< Corrected to GPIO20 for UART1 RX
 
-#define WIFI_LED 9          // GPIO9 for WiFi LED
-#define NTRIP_LED 10        // GPIO10 for NTRIP LED
-#define MQTT_LED 11         // GPIO11 for MQTT LED
-#define FIX_RTKFLOAT_LED 12 // GPIO12 for FIX RTK-FLOAT LED
-#define FIX_RTK_LED 13      // GPIO13 for FIX RTK LED
+// #define WIFI_LED 46         //</ GPIO9 for WiFi LED
+// #define NTRIP_LED 9         ///< GPIO10 for NTRIP LED
+// #define MQTT_LED 10         ///< GPIO11 for MQTT LED
+// #define FIX_RTKFLOAT_LED 11 ///< GPIO12 for FIX RTK-FLOAT LED
+// #define FIX_RTK_LED 12      ///< GPIO13 for FIX RTK LED
 
-NTRIPClient ntrip_c; ///< NTRIPClient object
+NTRIPClient ntrip_c;        ///< NTRIPClient object
 
-WiFiClient espClient;
-PubSubClient mqttClient(espClient);
+WiFiClient espClient;       ///< WiFi client object
+PubSubClient mqttClient(espClient); ///< MQTT client object
 
 // Configuration variables
 char _wifiSsid[32] = {'\0'};        ///< WiFi SSID
@@ -123,14 +126,10 @@ bool rmcReceived = false;
 bool vtgReceived = false;
 
 
-#define LED_OFF_TIME_MS 100 ///< Time in milliseconds to turn off LED after last data received
-#define NTRIP_TIMEOUT_MS 60000 ///< Time in milliseconds to reset system if no NTRIP data is received
-
 // Flag to track receiving state
 bool isReceiving = false;          ///< Flag to track if data is being received
 unsigned long lastReceiveTime = {0}; ///< Time of last data received in ms
 
-#define BUTTON_PRESS_TIME_MS 3000 ///< Time in milliseconds to hold button to enter configuration mode
 
 // Button press handling
 bool buttonPressed = false;
@@ -138,8 +137,6 @@ unsigned long buttonPressTime = {0};
 bool configMode = false;
 
 unsigned long lastGGASendTime = 0; ///< Variable to store the last GGA send time
-const unsigned long GGA_SEND_INTERVAL = 300000; ///< 5 minutes in milliseconds
-
 unsigned long sequenceNumber = 0;   ///< Variable to store the sequence number for the JSON data
 
 IPAddress mqttBrokerIP; // Variable to store the MQTT broker IP address
@@ -339,31 +336,6 @@ void reconnectMQTT() {
         Serial.print("Failed, rc=");
         Serial.print(mqttClient.state());
     }
-}
-
-/**
- * \brief Function to calculate CRC-16 for the given data.
- * \param data Pointer to the data buffer.
- * \param length Length of the data buffer.
- * \return Calculated CRC-16 value.
- */
-uint16_t calculateCRC16(const uint8_t* data, size_t length) {
-    uint16_t crc = 0xFFFF; // Initial value
-    const uint16_t polynomial = 0x1021; // CRC-16-CCITT polynomial
-
-    for (size_t i = 0; i < length; i++) {
-        crc ^= (data[i] << 8); // XOR byte into the top of crc
-
-        for (uint8_t bit = 0; bit < 8; bit++) {
-            if (crc & 0x8000) {
-                crc = (crc << 1) ^ polynomial;
-            } else {
-                crc = (crc << 1);
-            }
-        }
-    }
-
-    return crc;
 }
 
 /**
