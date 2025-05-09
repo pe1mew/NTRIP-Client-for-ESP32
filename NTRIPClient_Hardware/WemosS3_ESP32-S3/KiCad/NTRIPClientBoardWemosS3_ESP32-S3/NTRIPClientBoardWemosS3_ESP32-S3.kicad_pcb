@@ -8138,7 +8138,7 @@
 		)
 	)
 	(gr_text "RX-DATA"
-		(at 120.396 96.139 0)
+		(at 120.523 98.298 0)
 		(layer "F.SilkS")
 		(uuid "2b8764dc-8a41-4bf5-a703-bcb7dd066a05")
 		(effects
@@ -8338,7 +8338,7 @@
 		)
 	)
 	(gr_text "1PPS"
-		(at 120.396 98.298 0)
+		(at 120.523 96.139 0)
 		(layer "F.SilkS")
 		(uuid "cccaebb5-446b-4b54-8d4c-086bf36ee7e4")
 		(effects
