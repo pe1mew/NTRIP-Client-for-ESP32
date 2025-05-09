@@ -733,8 +733,15 @@ void loop() {
                 fieldIndex = 0;
                 double speed = 0.0;
                 double direction = 0.0;
+                char* previousToken = nullptr; // To store the previous token
 
                 while (token != NULL) {
+
+                    // Check if the current token is "K"
+                    if (strcmp(token, "K") == 0 && previousToken != nullptr) {
+                        speed = atof(previousToken) / 3.6; // Convert the previous token from speed km/h to m/s
+                    }
+
                     switch (fieldIndex) {
                         case 1: // Direction (true north)
                             direction = atof(token);
@@ -744,10 +751,10 @@ void loop() {
                                 direction = 0.0; // Invalid direction
                             }
                             break;
-                        case 7: // Speed in km/h
-                            speed = atof(token) / 3.6; // Convert speed from km/h to m/s
-                            break;
                     }
+                    
+                    // Update the previous token and move to the next
+                    previousToken = token;
                     token = strtok(NULL, ",");
                     fieldIndex++;
                 }
