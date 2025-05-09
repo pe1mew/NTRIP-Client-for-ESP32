@@ -603,6 +603,8 @@ void loop() {
                 // Serial.println(nmeaBuffer); // Send the complete RMC sentence to Serial
                 
                 // Parse GGA sentence
+                // Serial.println(ggaBuffer); // Print the GGA sentence to Serial for debugging
+                
                 char* token = strtok(ggaBuffer, ",");
                 int fieldIndex = 0;
                 double latitude = 0.0;
@@ -672,10 +674,21 @@ void loop() {
                 int hours = (timeBuffer[0] - '0') * 10 + (timeBuffer[1] - '0');
                 int minutes = (timeBuffer[2] - '0') * 10 + (timeBuffer[3] - '0');
                 int seconds = (timeBuffer[4] - '0') * 10 + (timeBuffer[5] - '0');
-                int milliseconds = (timeBuffer[7] - '0') * 100 + (timeBuffer[8] - '0') * 10 + (timeBuffer[9] - '0');
+
+                // Check if milliseconds part has 3 or 2 positions
+                int milliseconds = 0;
+                if (strlen(timeBuffer) > 7) {
+                    if (strlen(&timeBuffer[7]) == 3) { // 3 positions for milliseconds
+                        milliseconds = (timeBuffer[7] - '0') * 100 + (timeBuffer[8] - '0') * 10 + (timeBuffer[9] - '0');
+                    } else if (strlen(&timeBuffer[7]) == 2) { // 2 positions for milliseconds
+                        milliseconds = (timeBuffer[7] - '0') * 100 + (timeBuffer[8] - '0') * 10;
+                    }
+                }
 
                 
                 // Get current date
+                // Serial.println(rmcBuffer); // Print the VTG sentence to Serial for debugging
+
                 token = strtok(rmcBuffer, ",");
                 fieldIndex = 0;
                 char dateBuffer[7] = {0};
