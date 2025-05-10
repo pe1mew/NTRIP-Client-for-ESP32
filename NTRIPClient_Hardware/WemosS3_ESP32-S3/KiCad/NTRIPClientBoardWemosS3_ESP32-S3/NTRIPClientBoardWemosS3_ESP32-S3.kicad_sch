@@ -1047,6 +1047,238 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "my-KiCad-library:Atom-Lite_M5"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "U"
+				(at -10.414 11.43 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "Atom-Lite_M5_1_1"
+				(rectangle
+					(start -11.43 10.16)
+					(end 11.43 -8.89)
+					(stroke
+						(width 0)
+						(type solid)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(text "Atom-Lite M5"
+					(at -4.064 -10.16 0)
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(pin power_in line
+					(at -14.97 5.08 0)
+					(length 3.54)
+					(name "3V3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "J41"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -14.97 2.54 0)
+					(length 3.54)
+					(name "G22"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "J42"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -14.97 0 0)
+					(length 3.54)
+					(name "G19"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "J43"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -14.97 -2.54 0)
+					(length 3.54)
+					(name "G23"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "J44"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -14.97 -5.08 0)
+					(length 3.54)
+					(name "G33"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "J45"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at 14.97 3.81 180)
+					(length 3.54)
+					(name "G21"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "J31"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at 14.97 1.27 180)
+					(length 3.54)
+					(name "G25"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "J32"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 14.97 -1.27 180)
+					(length 3.54)
+					(name "5V"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "J33"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 14.97 -3.81 180)
+					(length 3.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "J34"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "my-KiCad-library:BUCK-30V-5V-ESP32_node"
 			(pin_names
 				(offset 1.016)
@@ -2635,7 +2867,7 @@
 	)
 	(wire
 		(pts
-			(xy 161.29 102.87) (xy 184.15 102.87)
+			(xy 124.46 93.98) (xy 147.32 93.98)
 		)
 		(stroke
 			(width 0)
@@ -2655,7 +2887,7 @@
 	)
 	(wire
 		(pts
-			(xy 161.29 80.01) (xy 184.15 80.01)
+			(xy 124.46 71.12) (xy 147.32 71.12)
 		)
 		(stroke
 			(width 0)
@@ -2675,7 +2907,7 @@
 	)
 	(wire
 		(pts
-			(xy 161.29 87.63) (xy 184.15 87.63)
+			(xy 124.46 78.74) (xy 147.32 78.74)
 		)
 		(stroke
 			(width 0)
@@ -2692,6 +2924,16 @@
 			(type default)
 		)
 		(uuid "19ac7b31-0ec1-4561-bc96-d9250855f9bb")
+	)
+	(wire
+		(pts
+			(xy 214.63 73.66) (xy 229.14 73.66)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1cd40536-b3be-4c4b-b868-f59af577f9aa")
 	)
 	(wire
 		(pts
@@ -2745,7 +2987,7 @@
 	)
 	(wire
 		(pts
-			(xy 161.29 90.17) (xy 184.15 90.17)
+			(xy 124.46 81.28) (xy 147.32 81.28)
 		)
 		(stroke
 			(width 0)
@@ -2765,7 +3007,7 @@
 	)
 	(wire
 		(pts
-			(xy 161.29 100.33) (xy 184.15 100.33)
+			(xy 124.46 91.44) (xy 147.32 91.44)
 		)
 		(stroke
 			(width 0)
@@ -2775,7 +3017,7 @@
 	)
 	(wire
 		(pts
-			(xy 39.37 87.63) (xy 62.23 87.63)
+			(xy 30.48 81.28) (xy 53.34 81.28)
 		)
 		(stroke
 			(width 0)
@@ -2845,7 +3087,7 @@
 	)
 	(wire
 		(pts
-			(xy 161.29 72.39) (xy 184.15 72.39)
+			(xy 124.46 63.5) (xy 147.32 63.5)
 		)
 		(stroke
 			(width 0)
@@ -2855,7 +3097,7 @@
 	)
 	(wire
 		(pts
-			(xy 214.63 54.61) (xy 229.87 54.61)
+			(xy 177.8 45.72) (xy 193.04 45.72)
 		)
 		(stroke
 			(width 0)
@@ -2865,7 +3107,7 @@
 	)
 	(wire
 		(pts
-			(xy 161.29 92.71) (xy 184.15 92.71)
+			(xy 124.46 83.82) (xy 147.32 83.82)
 		)
 		(stroke
 			(width 0)
@@ -2885,7 +3127,7 @@
 	)
 	(wire
 		(pts
-			(xy 92.71 95.25) (xy 111.76 95.25)
+			(xy 83.82 88.9) (xy 102.87 88.9)
 		)
 		(stroke
 			(width 0)
@@ -2895,7 +3137,7 @@
 	)
 	(wire
 		(pts
-			(xy 214.63 100.33) (xy 229.87 100.33)
+			(xy 177.8 91.44) (xy 193.04 91.44)
 		)
 		(stroke
 			(width 0)
@@ -2915,7 +3157,27 @@
 	)
 	(wire
 		(pts
-			(xy 39.37 77.47) (xy 62.23 77.47)
+			(xy 259.08 69.85) (xy 274.32 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5714cde2-aded-49a2-9e6a-5ddbfe2cf81e")
+	)
+	(wire
+		(pts
+			(xy 214.63 76.2) (xy 229.14 76.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "59d1e450-95a6-421b-a868-438c5b48cd00")
+	)
+	(wire
+		(pts
+			(xy 30.48 71.12) (xy 53.34 71.12)
 		)
 		(stroke
 			(width 0)
@@ -2925,7 +3187,7 @@
 	)
 	(wire
 		(pts
-			(xy 161.29 97.79) (xy 184.15 97.79)
+			(xy 124.46 88.9) (xy 147.32 88.9)
 		)
 		(stroke
 			(width 0)
@@ -2945,7 +3207,7 @@
 	)
 	(wire
 		(pts
-			(xy 39.37 85.09) (xy 62.23 85.09)
+			(xy 30.48 78.74) (xy 53.34 78.74)
 		)
 		(stroke
 			(width 0)
@@ -2965,7 +3227,7 @@
 	)
 	(wire
 		(pts
-			(xy 161.29 95.25) (xy 184.15 95.25)
+			(xy 124.46 86.36) (xy 147.32 86.36)
 		)
 		(stroke
 			(width 0)
@@ -3005,7 +3267,7 @@
 	)
 	(wire
 		(pts
-			(xy 161.29 77.47) (xy 184.15 77.47)
+			(xy 124.46 68.58) (xy 147.32 68.58)
 		)
 		(stroke
 			(width 0)
@@ -3045,7 +3307,7 @@
 	)
 	(wire
 		(pts
-			(xy 214.63 80.01) (xy 229.87 80.01)
+			(xy 177.8 71.12) (xy 193.04 71.12)
 		)
 		(stroke
 			(width 0)
@@ -3055,7 +3317,7 @@
 	)
 	(wire
 		(pts
-			(xy 39.37 74.93) (xy 62.23 74.93)
+			(xy 30.48 68.58) (xy 53.34 68.58)
 		)
 		(stroke
 			(width 0)
@@ -3075,7 +3337,7 @@
 	)
 	(wire
 		(pts
-			(xy 214.63 102.87) (xy 229.87 102.87)
+			(xy 177.8 93.98) (xy 193.04 93.98)
 		)
 		(stroke
 			(width 0)
@@ -3175,7 +3437,7 @@
 	)
 	(wire
 		(pts
-			(xy 161.29 74.93) (xy 184.15 74.93)
+			(xy 124.46 66.04) (xy 147.32 66.04)
 		)
 		(stroke
 			(width 0)
@@ -3202,6 +3464,16 @@
 			(type default)
 		)
 		(uuid "bb0c953a-17ac-4008-a5ff-75591ee69a71")
+	)
+	(wire
+		(pts
+			(xy 259.08 74.93) (xy 274.32 74.93)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c254e7cc-30b7-4753-a28a-c39c5921f517")
 	)
 	(wire
 		(pts
@@ -3245,7 +3517,7 @@
 	)
 	(wire
 		(pts
-			(xy 92.71 80.01) (xy 111.76 80.01)
+			(xy 83.82 73.66) (xy 102.87 73.66)
 		)
 		(stroke
 			(width 0)
@@ -3255,7 +3527,7 @@
 	)
 	(wire
 		(pts
-			(xy 161.29 59.69) (xy 184.15 59.69)
+			(xy 124.46 50.8) (xy 147.32 50.8)
 		)
 		(stroke
 			(width 0)
@@ -3305,7 +3577,7 @@
 	)
 	(wire
 		(pts
-			(xy 214.63 97.79) (xy 229.87 97.79)
+			(xy 177.8 88.9) (xy 193.04 88.9)
 		)
 		(stroke
 			(width 0)
@@ -3322,6 +3594,26 @@
 			(type default)
 		)
 		(uuid "e3679d44-96d8-4804-a56b-0f08a0078aa1")
+	)
+	(wire
+		(pts
+			(xy 259.08 77.47) (xy 274.32 77.47)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e4c96934-0eec-482b-9276-556bda938c2c")
+	)
+	(wire
+		(pts
+			(xy 214.63 78.74) (xy 229.14 78.74)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e71e4916-f218-44c8-823b-56931f9eb1c2")
 	)
 	(wire
 		(pts
@@ -3345,7 +3637,17 @@
 	)
 	(wire
 		(pts
-			(xy 39.37 95.25) (xy 62.23 95.25)
+			(xy 214.63 71.12) (xy 229.14 71.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f2a5c825-267d-4dfa-8b25-8845acf2670c")
+	)
+	(wire
+		(pts
+			(xy 30.48 88.9) (xy 53.34 88.9)
 		)
 		(stroke
 			(width 0)
@@ -3394,7 +3696,7 @@
 		(uuid "0095aa71-ea25-4076-b58f-99e1d70b32e8")
 	)
 	(label "5V"
-		(at 163.83 100.33 0)
+		(at 127 91.44 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3404,7 +3706,7 @@
 		(uuid "05f380bc-30fd-4cfa-b8db-3f0c401d061b")
 	)
 	(label "RESET"
-		(at 163.83 59.69 0)
+		(at 127 50.8 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3444,7 +3746,7 @@
 		(uuid "2a0fd223-2d73-4cd1-b01d-f9aeed01869c")
 	)
 	(label "LED_NTRIP"
-		(at 163.83 90.17 0)
+		(at 127 81.28 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3454,7 +3756,7 @@
 		(uuid "2a4fc516-ed5e-4ac6-9f12-5e5de687397a")
 	)
 	(label "MQTT_PACKET_LED"
-		(at 163.83 97.79 0)
+		(at 127 88.9 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3473,6 +3775,16 @@
 		)
 		(uuid "31aac14b-e448-4dc2-89b5-37e6ab1ea104")
 	)
+	(label "NTRIP_PACKET_LED"
+		(at 228.6 76.2 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "36c1cd51-4d8f-4c0d-b674-f74c9b8c3a23")
+	)
 	(label "MQTT_PACKET_LED"
 		(at 69.85 172.72 0)
 		(effects
@@ -3484,7 +3796,7 @@
 		(uuid "3ad58ad4-0f62-42e3-a8d0-d8fd570c28fc")
 	)
 	(label "1PPS"
-		(at 110.49 80.01 180)
+		(at 101.6 73.66 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3494,7 +3806,7 @@
 		(uuid "3f807247-0aed-4f4a-b0f6-8b6ffb54fd14")
 	)
 	(label "GNSS_RTK_RX"
-		(at 41.91 85.09 0)
+		(at 33.02 78.74 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3514,7 +3826,7 @@
 		(uuid "416dcd62-0e83-45d3-bafe-791677aa4594")
 	)
 	(label "GND"
-		(at 40.64 77.47 0)
+		(at 31.75 71.12 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3534,7 +3846,7 @@
 		(uuid "5ad636b8-4cfa-4f30-8b77-8ebacdd7a091")
 	)
 	(label "GND"
-		(at 228.6 54.61 180)
+		(at 191.77 45.72 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3564,7 +3876,7 @@
 		(uuid "6f576fe6-0c9f-4016-baa2-b09744dcc0c8")
 	)
 	(label "ACQ_TX"
-		(at 163.83 72.39 0)
+		(at 127 63.5 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3574,7 +3886,7 @@
 		(uuid "736b61fd-cdc5-4bfb-b22c-81c9f2c47ce7")
 	)
 	(label "GND"
-		(at 40.64 95.25 0)
+		(at 31.75 88.9 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3584,7 +3896,7 @@
 		(uuid "7c501ca5-94d3-40f3-ae52-ca76686cf030")
 	)
 	(label "ACQ_RX"
-		(at 163.83 74.93 0)
+		(at 127 66.04 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3592,6 +3904,16 @@
 			(justify left bottom)
 		)
 		(uuid "7f749782-a744-4984-8033-317ea2f05a60")
+	)
+	(label "ACQ_RX"
+		(at 214.63 73.66 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "82287789-d2a4-4261-99b1-23e4098c3c2b")
 	)
 	(label "LED_WIFI"
 		(at 69.85 127 0)
@@ -3613,8 +3935,18 @@
 		)
 		(uuid "89995ae4-bbe2-490a-968a-dbfee8f1e845")
 	)
+	(label "GND"
+		(at 274.32 77.47 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "8bd210ad-8eb9-4bfd-8c22-96d18aae29d4")
+	)
 	(label "GNSS_RTK_RX"
-		(at 163.83 80.01 0)
+		(at 127 71.12 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3634,7 +3966,7 @@
 		(uuid "96bab7af-331c-4392-95cb-dd4d461758bb")
 	)
 	(label "GND"
-		(at 228.6 97.79 180)
+		(at 191.77 88.9 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3644,7 +3976,7 @@
 		(uuid "9d4c3810-c7a4-42eb-9911-9b7d33c9a9ce")
 	)
 	(label "5V"
-		(at 40.64 74.93 0)
+		(at 31.75 68.58 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3654,7 +3986,7 @@
 		(uuid "9d503b4d-32f0-4445-b038-9b04737fae5b")
 	)
 	(label "LED_MQTT"
-		(at 163.83 92.71 0)
+		(at 127 83.82 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3664,7 +3996,7 @@
 		(uuid "a32b42df-86e6-4e79-b023-f542efce6290")
 	)
 	(label "GND"
-		(at 228.6 102.87 180)
+		(at 191.77 93.98 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3674,7 +4006,7 @@
 		(uuid "a547bd2e-ea62-4323-b9d7-cbbabce25a90")
 	)
 	(label "GND"
-		(at 110.49 95.25 180)
+		(at 101.6 88.9 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3714,7 +4046,7 @@
 		(uuid "b3e7d2ea-b4d2-4a0c-8908-b5e359e98797")
 	)
 	(label "GND"
-		(at 228.6 100.33 180)
+		(at 191.77 91.44 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3724,7 +4056,7 @@
 		(uuid "b4a1755c-a5f1-43ef-8026-193c6f2c925a")
 	)
 	(label "GNSS_RTK_TX"
-		(at 163.83 77.47 0)
+		(at 127 68.58 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3734,7 +4066,7 @@
 		(uuid "c7d28fa2-9217-4315-885f-952a89c715ef")
 	)
 	(label "GNSS_RTK_TX"
-		(at 41.91 87.63 0)
+		(at 33.02 81.28 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3754,7 +4086,7 @@
 		(uuid "cbe14b2c-cf4e-4c72-b410-0e1c344d39a7")
 	)
 	(label "LED_WIFI"
-		(at 163.83 87.63 0)
+		(at 127 78.74 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3764,7 +4096,7 @@
 		(uuid "d990abe2-6bc2-4053-a093-31c689f2fad1")
 	)
 	(label "IO0"
-		(at 224.79 80.01 0)
+		(at 187.96 71.12 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3772,6 +4104,16 @@
 			(justify left bottom)
 		)
 		(uuid "da26a57b-e35e-44a3-8ba4-ab8e6cc48aa1")
+	)
+	(label "MQTT_PACKET_LED"
+		(at 228.6 78.74 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "df18f40f-9803-4480-89c3-4bbfe6509e9a")
 	)
 	(label "LED_NTRIP"
 		(at 69.85 138.43 0)
@@ -3784,7 +4126,7 @@
 		(uuid "e0baf720-f9d0-43ee-910d-54fbbf996991")
 	)
 	(label "GND"
-		(at 163.83 102.87 0)
+		(at 127 93.98 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3794,7 +4136,7 @@
 		(uuid "e5cca8e9-9ef2-4257-8b0e-fe76920f85dd")
 	)
 	(label "NTRIP_PACKET_LED"
-		(at 163.83 95.25 0)
+		(at 127 86.36 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3802,6 +4144,36 @@
 			(justify left bottom)
 		)
 		(uuid "e7c62e1e-f79b-4aeb-b16f-fceed2533cdb")
+	)
+	(label "GNSS_RTK_RX"
+		(at 274.32 69.85 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "e81400cf-c40a-41d8-8f09-31453fd659cc")
+	)
+	(label "GNSS_RTK_TX"
+		(at 214.63 71.12 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "efb65b4c-c866-44c7-b9fc-6a2dbc4d77ba")
+	)
+	(label "5V"
+		(at 274.32 74.93 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "ff72c84a-a03e-47e8-848f-c91dea03dddf")
 	)
 	(symbol
 		(lib_id "Device:R")
@@ -3872,7 +4244,7 @@
 	)
 	(symbol
 		(lib_id "my-KiCad-library:Wemos_S3_ESP32-S3")
-		(at 199.39 77.47 0)
+		(at 162.56 68.58 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -3881,7 +4253,7 @@
 		(fields_autoplaced yes)
 		(uuid "08bd5151-cbc9-4147-9400-e96e04e38da9")
 		(property "Reference" "U1"
-			(at 199.39 46.99 0)
+			(at 162.56 38.1 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3889,7 +4261,7 @@
 			)
 		)
 		(property "Value" "Wemos_S3_ESP32-S3"
-			(at 199.39 49.53 0)
+			(at 162.56 40.64 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3897,7 +4269,7 @@
 			)
 		)
 		(property "Footprint" "my-KiCad-library:Wemos_S3_ESP32-S3"
-			(at 199.39 77.47 0)
+			(at 162.56 68.58 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3906,7 +4278,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 199.39 77.47 0)
+			(at 162.56 68.58 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -3915,7 +4287,7 @@
 			)
 		)
 		(property "Description" "Wemos S3 ESP32-S3 board"
-			(at 198.882 107.188 0)
+			(at 162.052 98.298 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4633,6 +5005,95 @@
 		)
 	)
 	(symbol
+		(lib_id "my-KiCad-library:Atom-Lite_M5")
+		(at 244.11 73.66 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "6c3732c7-e1e8-4f05-b295-eaeb379ba539")
+		(property "Reference" "U4"
+			(at 244.11 59.69 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "~"
+			(at 244.11 62.23 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "my-KiCad-library:Atom-Lite_M5"
+			(at 244.11 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 244.11 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 244.11 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "J34"
+			(uuid "64ce6823-eef6-45f1-9b4b-6bf1e858b236")
+		)
+		(pin "J33"
+			(uuid "13e95393-c4ae-4557-ac9f-1e153c923255")
+		)
+		(pin "J32"
+			(uuid "8229e671-bc03-4d24-a646-6cad96831eda")
+		)
+		(pin "J31"
+			(uuid "edd7e72e-eb41-4cf1-a979-bb52e04d89a5")
+		)
+		(pin "J44"
+			(uuid "619e4253-1d52-4cf2-ac64-0a95b543e96d")
+		)
+		(pin "J45"
+			(uuid "902cb6f0-d3d4-4178-94ee-38764b99f0fc")
+		)
+		(pin "J41"
+			(uuid "ebb91593-7bf8-416c-8602-22730ca31c50")
+		)
+		(pin "J42"
+			(uuid "1b1222d5-0dc3-4def-9703-e30a542daf06")
+		)
+		(pin "J43"
+			(uuid "d8267197-e243-49eb-b1cd-f22ccc811b62")
+		)
+		(instances
+			(project ""
+				(path "/f491fbd2-d68c-4c61-8e96-a4f31bd6d9f5"
+					(reference "U4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Switch:SW_Reed")
 		(at 130.81 154.94 0)
 		(unit 1)
@@ -4777,7 +5238,7 @@
 	)
 	(symbol
 		(lib_id "my-KiCad-library:SparkFun_GNSS_LG290P")
-		(at 77.47 77.47 0)
+		(at 68.58 71.12 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -4786,7 +5247,7 @@
 		(fields_autoplaced yes)
 		(uuid "acae4644-c2b7-4bdf-a95d-ac13e588ccbd")
 		(property "Reference" "U2"
-			(at 77.47 50.8 0)
+			(at 68.58 44.45 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4794,7 +5255,7 @@
 			)
 		)
 		(property "Value" "~"
-			(at 77.47 53.34 0)
+			(at 68.58 46.99 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4802,7 +5263,7 @@
 			)
 		)
 		(property "Footprint" "my-KiCad-library:SparkFun_GNSS_LG290P"
-			(at 76.708 52.832 0)
+			(at 67.818 46.482 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4811,7 +5272,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 77.47 77.47 0)
+			(at 68.58 71.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4820,7 +5281,7 @@
 			)
 		)
 		(property "Description" "SparkFun_GNSS_LG290P"
-			(at 77.47 99.568 0)
+			(at 68.58 93.218 0)
 			(effects
 				(font
 					(size 1.27 1.27)

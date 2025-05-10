@@ -435,7 +435,8 @@ void setup() {
 
     // Request SourceTable from NTRIP server
     Serial.println("[INFO] Requesting SourceTable from NTRIP server...");
-    if (ntrip_c.reqSrcTbl(_ntripHost, _ntripHttpPort)) {
+    // if (ntrip_c.reqSrcTblNoAuth(_ntripHost, _ntripHttpPort)) {
+    if (ntrip_c.reqSrcTbl(_ntripHost, _ntripHttpPort, _ntripUser, _ntripPassword)) {
         char buffer[512];
         delay(5);
         while (ntrip_c.available()) {

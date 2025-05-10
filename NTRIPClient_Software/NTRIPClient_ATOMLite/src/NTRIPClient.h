@@ -37,13 +37,24 @@
 class NTRIPClient : public WiFiClient {
 public:
     /**
-     * @brief Request the MountPoints List serviced by the NTRIP Caster.
+     * @brief Request the MountPoints List serviced by the NTRIP Caster without username and password.
      * 
      * @param host The hostname of the NTRIP Caster.
      * @param port The port number of the NTRIP Caster.
      * @return true if the request was successful, false otherwise.
      */
-    bool reqSrcTbl(const char* host, int &port);
+    bool reqSrcTblNoAuth(const char* host, int &port);
+
+    /**
+     * @brief Request the MountPoints List serviced by the NTRIP Caster with user authentication.
+     * 
+     * @param host The hostname of the NTRIP Caster.
+     * @param port The port number of the NTRIP Caster.
+     * @param user The username for authentication.
+     * @param psw The password for authentication.
+     * @return true if the request was successful, false otherwise.
+     */
+    bool reqSrcTbl(const char* host, int &port, const char* user, const char* psw);
 
     /**
      * @brief Request RAW data from the NTRIP Caster with user authentication.
