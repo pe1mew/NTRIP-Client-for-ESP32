@@ -39,8 +39,8 @@ public:
     /**
      * @brief Request the MountPoints List serviced by the NTRIP Caster without username and password.
      * 
-     * @param host The hostname of the NTRIP Caster.
-     * @param port The port number of the NTRIP Caster.
+     * @param[in] host The hostname of the NTRIP Caster.
+     * @param[in] port The port number of the NTRIP Caster.
      * @return true if the request was successful, false otherwise.
      */
     bool reqSrcTblNoAuth(const char* host, int &port);
@@ -48,10 +48,10 @@ public:
     /**
      * @brief Request the MountPoints List serviced by the NTRIP Caster with user authentication.
      * 
-     * @param host The hostname of the NTRIP Caster.
-     * @param port The port number of the NTRIP Caster.
-     * @param user The username for authentication.
-     * @param psw The password for authentication.
+     * @param[in] host The hostname of the NTRIP Caster.
+     * @param[in] port The port number of the NTRIP Caster.
+     * @param[in] user The username for authentication.
+     * @param[in] psw The password for authentication.
      * @return true if the request was successful, false otherwise.
      */
     bool reqSrcTbl(const char* host, int &port, const char* user, const char* psw);
@@ -59,11 +59,11 @@ public:
     /**
      * @brief Request RAW data from the NTRIP Caster with user authentication.
      * 
-     * @param host The hostname of the NTRIP Caster.
-     * @param port The port number of the NTRIP Caster.
-     * @param mntpnt The MountPoint to request data from.
-     * @param user The username for authentication.
-     * @param psw The password for authentication.
+     * @param[in] host The hostname of the NTRIP Caster.
+     * @param[in] port The port number of the NTRIP Caster.
+     * @param[in] mntpnt The MountPoint to request data from.
+     * @param[in] user The username for authentication.
+     * @param[in] psw The password for authentication.
      * @return true if the request was successful, false otherwise.
      */
     bool reqRaw(const char* host, int &port, const char* mntpnt, const char* user, const char* psw);
@@ -71,9 +71,9 @@ public:
     /**
      * @brief Request RAW data from the NTRIP Caster without user authentication.
      * 
-     * @param host The hostname of the NTRIP Caster.
-     * @param port The port number of the NTRIP Caster.
-     * @param mntpnt The MountPoint to request data from.
+     * @param[in] host The hostname of the NTRIP Caster.
+     * @param[in] port The port number of the NTRIP Caster.
+     * @param[in] mntpnt The MountPoint to request data from.
      * @return true if the request was successful, false otherwise.
      */
     bool reqRaw(const char* host, int &port, const char* mntpnt);
@@ -81,8 +81,8 @@ public:
     /**
      * @brief Read a line of data from the NTRIP Caster.
      * 
-     * @param buffer The buffer to store the read data.
-     * @param size The size of the buffer.
+     * @param[out] buffer The buffer to store the read data.
+     * @param[in] size The size of the buffer.
      * @return The number of bytes read.
      */
     int readLine(char* buffer, int size);
@@ -90,7 +90,7 @@ public:
     /**
      * @brief Send a GGA sentence to the NTRIP Caster.
      * 
-     * @param gga The GGA sentence to send.
+     * @param[in] gga The GGA sentence to send.
      */
     void sendGGA(const char* gga);
 };

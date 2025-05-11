@@ -226,7 +226,7 @@ void saveConfigCallback() {
 /**
  * @brief Enter configuration mode to initialize WiFi.
  * 
- * @param buttonPressed Indicates if the button was pressed to enter configuration mode.
+ * @param[in] buttonPressed Indicates if the button was pressed to enter configuration mode.
  */
 void configurationMode(const bool buttonPressed = false) {
     pixels.setPixelColor(0, pixels.Color(255, 255, 255)); // Orange for configuration portal
@@ -315,9 +315,9 @@ void reconnectMQTT() {
 
 /**
  * \brief Function to compose the message with Control-A, timestamp, CRC-16, and Control-X.
- * \param timestamp The timestamp string to be included in the message.
- * \param outputBuffer The buffer to store the composed message.
- * \param outputLength The length of the composed message.
+ * \param[in] timestamp The timestamp string to be included in the message.
+ * \param[out] outputBuffer The buffer to store the composed message.
+ * \param[in] outputLength The length of the composed message.
  * \details The message format is as follows:
  * - Control-A (0x01)
  * - Timestamp (string)
@@ -727,17 +727,16 @@ void loop() {
                 char* previousToken = nullptr; // To store the previous token
 
                 while (token != NULL) {
-
-                    // Serial.print("Token ");
-                    // Serial.print(fieldIndex);
-                    // Serial.print(": ");
-                    // Serial.println(token);
-
-                    // Check if the current token is "K"
+                    // Extract speed from VTG sentence.
+                    // Because VTG sentense may differ in format, we need to check token
+                    // to determine if the previous token is speed and in which format it is, km/h or m/s.
+                    // Check if the current token is "K" and the previous token is not null, 
+                    // then convert the previous token from speed km/h to m/s.
                     if (strcmp(token, "K") == 0 && previousToken != nullptr) {
                         speed = atof(previousToken) / 3.6; // Convert the previous token from speed km/h to m/s
                     }
 
+                    // retrieve direction only if direction it "T" (true north), else 
                     switch (fieldIndex) {
                         case 1: // Direction (true north)
                             direction = atof(token);
@@ -749,7 +748,7 @@ void loop() {
                             break;
                     }
                     
-                    // Update the previous token and move to the next
+                    // Update the previous token as part of speed retrievement and move to the next token.
                     previousToken = token;
                     token = strtok(NULL, ",");
                     fieldIndex++;
@@ -773,14 +772,15 @@ void loop() {
                 serializeJson(doc, jsonString);
                 mqttClient.publish(_mqttTopic, jsonString.c_str());
                 
-                uint8_t message[64]; // Buffer to hold the composed message
-                size_t messageLength = 0;
+                // Compose a time message for acquisition module:
+                uint8_t timeMessage[64] = {0}; // Buffer to hold the composed time message
+                size_t timeMessageLength = 0;
 
                 // Compose the message
-                composeMessage(timestamp, message, messageLength);
+                composeMessage(timestamp, timeMessage, timeMessageLength);
 
                 // Send the composed message to Serial1
-                Serial1.write(message, messageLength);
+                Serial1.write(timeMessage, timeMessageLength);
 
             }
 
