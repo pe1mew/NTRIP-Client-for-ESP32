@@ -601,11 +601,6 @@ void loop() {
                 // To convert these values into decimal degrees:
                 //  - Decimal Degrees = Degrees + (Minutes / 60)
 
-                // Serial.println(nmeaBuffer); // Send the complete RMC sentence to Serial
-                
-                // Parse GGA sentence
-                // Serial.println(ggaBuffer); // Print the GGA sentence to Serial for debugging
-                
                 char* token = strtok(ggaBuffer, ",");
                 int fieldIndex = 0;
                 double latitude = 0.0;
@@ -685,11 +680,7 @@ void loop() {
                         milliseconds = (timeBuffer[7] - '0') * 100 + (timeBuffer[8] - '0') * 10;
                     }
                 }
-
                 
-                // Get current date
-                // Serial.println(rmcBuffer); // Print the VTG sentence to Serial for debugging
-
                 token = strtok(rmcBuffer, ",");
                 fieldIndex = 0;
                 char dateBuffer[7] = {0};

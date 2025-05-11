@@ -1,3 +1,4 @@
 /NTRIPClient_ATOMLite/data/config.json
 /*.zip
 /NTRIPClient_Software/NTRIPClient_ATOMLite/.vscode
+/NTRIPClient_Hardware/WemosS3_ESP32-S3/KiCad/NTRIPClientBoardWemosS3_ESP32-S3/my-KiCad-library

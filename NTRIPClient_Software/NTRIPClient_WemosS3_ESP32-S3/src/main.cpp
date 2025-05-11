@@ -72,33 +72,8 @@
 #include "hardwareConfig.h" // Include hardware configuration file
 #include "NTRIPClientCRC16.h" // Include the CRC-16 calculation header file
 
-// // Define brightness level (10% of maximum brightness)
-// #define LED_BRIGHTNESS 25  // Brightness level (0-255, where 255 is 100%)
-
-// // NeoPixel LED configuration
-// #define LED_PIN 38  // GPIO 38 for the onboard WS2812 RGB LED
-// #define NUMPIXELS 1
-
 Adafruit_NeoPixel pixels(NUMPIXELS, LED_PIN, NEO_GRB + NEO_KHZ800); ///< NeoPixel LED object
-
-// // Button configuration
-// #define BUTTON_PIN 0        ///< GPIO0 for button input
-
-// // Second serial interface for NTRIPClient
-// #define TXD2_PIN 17         ///< Corrected to GPIO17 for UART2 TX
-// #define RXD2_PIN 18         ///< Corrected to GPIO18 for UART2 RX
-// // GPIO19/20 for Serial1 (Telemetry unit)
-// #define TXD1_PIN 15         ///< Corrected to GPIO19 for UART1 TX
-// #define RXD1_PIN 16         ///< Corrected to GPIO20 for UART1 RX
-
-// #define WIFI_LED 46         //</ GPIO9 for WiFi LED
-// #define NTRIP_LED 9         ///< GPIO10 for NTRIP LED
-// #define MQTT_LED 10         ///< GPIO11 for MQTT LED
-// #define FIX_RTKFLOAT_LED 11 ///< GPIO12 for FIX RTK-FLOAT LED
-// #define FIX_RTK_LED 12      ///< GPIO13 for FIX RTK LED
-
 NTRIPClient ntrip_c;        ///< NTRIPClient object
-
 WiFiClient espClient;       ///< WiFi client object
 PubSubClient mqttClient(espClient); ///< MQTT client object
 
@@ -251,7 +226,7 @@ void saveConfigCallback() {
 /**
  * @brief Enter configuration mode to initialize WiFi.
  * 
- * @param buttonPressed Indicates if the button was pressed to enter configuration mode.
+ * @param[in] buttonPressed Indicates if the button was pressed to enter configuration mode.
  */
 void configurationMode(const bool buttonPressed = false) {
     pixels.setPixelColor(0, pixels.Color(255, 255, 255)); // Orange for configuration portal
@@ -340,9 +315,9 @@ void reconnectMQTT() {
 
 /**
  * \brief Function to compose the message with Control-A, timestamp, CRC-16, and Control-X.
- * \param timestamp The timestamp string to be included in the message.
- * \param outputBuffer The buffer to store the composed message.
- * \param outputLength The length of the composed message.
+ * \param[in] timestamp The timestamp string to be included in the message.
+ * \param[out] outputBuffer The buffer to store the composed message.
+ * \param[in] outputLength The length of the composed message.
  * \details The message format is as follows:
  * - Control-A (0x01)
  * - Timestamp (string)
@@ -460,7 +435,8 @@ void setup() {
 
     // Request SourceTable from NTRIP server
     Serial.println("[INFO] Requesting SourceTable from NTRIP server...");
-    if (ntrip_c.reqSrcTbl(_ntripHost, _ntripHttpPort)) {
+    // if (ntrip_c.reqSrcTblNoAuth(_ntripHost, _ntripHttpPort)) {
+    if (ntrip_c.reqSrcTbl(_ntripHost, _ntripHttpPort, _ntripUser, _ntripPassword)) {
         char buffer[512];
         delay(5);
         while (ntrip_c.available()) {
@@ -628,6 +604,8 @@ void loop() {
                 // Serial.println(nmeaBuffer); // Send the complete RMC sentence to Serial
                 
                 // Parse GGA sentence
+                // Serial.println(ggaBuffer); // Print the GGA sentence to Serial for debugging
+                
                 char* token = strtok(ggaBuffer, ",");
                 int fieldIndex = 0;
                 double latitude = 0.0;
@@ -697,10 +675,21 @@ void loop() {
                 int hours = (timeBuffer[0] - '0') * 10 + (timeBuffer[1] - '0');
                 int minutes = (timeBuffer[2] - '0') * 10 + (timeBuffer[3] - '0');
                 int seconds = (timeBuffer[4] - '0') * 10 + (timeBuffer[5] - '0');
-                int milliseconds = (timeBuffer[7] - '0') * 100 + (timeBuffer[8] - '0') * 10 + (timeBuffer[9] - '0');
+
+                // Check if milliseconds part has 3 or 2 positions
+                int milliseconds = 0;
+                if (strlen(timeBuffer) > 7) {
+                    if (strlen(&timeBuffer[7]) == 3) { // 3 positions for milliseconds
+                        milliseconds = (timeBuffer[7] - '0') * 100 + (timeBuffer[8] - '0') * 10 + (timeBuffer[9] - '0');
+                    } else if (strlen(&timeBuffer[7]) == 2) { // 2 positions for milliseconds
+                        milliseconds = (timeBuffer[7] - '0') * 100 + (timeBuffer[8] - '0') * 10;
+                    }
+                }
 
                 
                 // Get current date
+                // Serial.println(rmcBuffer); // Print the VTG sentence to Serial for debugging
+
                 token = strtok(rmcBuffer, ",");
                 fieldIndex = 0;
                 char dateBuffer[7] = {0};
@@ -729,6 +718,8 @@ void loop() {
                 snprintf(timestamp, sizeof(timestamp), "%04d-%02d-%02d %02d:%02d:%02d.%03d", year, month, day, hours, minutes, seconds, milliseconds);
 
                 // Parse VTG sentence
+                // Serial.println(vtgBuffer); // Print the VTG sentence to Serial for debugging
+
                 token = strtok(vtgBuffer, ",");
                 fieldIndex = 0;
                 double speed = 0.0;
@@ -736,12 +727,16 @@ void loop() {
                 char* previousToken = nullptr; // To store the previous token
 
                 while (token != NULL) {
-
-                    // Check if the current token is "K"
+                    // Extract speed from VTG sentence.
+                    // Because VTG sentense may differ in format, we need to check token
+                    // to determine if the previous token is speed and in which format it is, km/h or m/s.
+                    // Check if the current token is "K" and the previous token is not null, 
+                    // then convert the previous token from speed km/h to m/s.
                     if (strcmp(token, "K") == 0 && previousToken != nullptr) {
                         speed = atof(previousToken) / 3.6; // Convert the previous token from speed km/h to m/s
                     }
 
+                    // retrieve direction only if direction it "T" (true north), else 
                     switch (fieldIndex) {
                         case 1: // Direction (true north)
                             direction = atof(token);
@@ -753,7 +748,7 @@ void loop() {
                             break;
                     }
                     
-                    // Update the previous token and move to the next
+                    // Update the previous token as part of speed retrievement and move to the next token.
                     previousToken = token;
                     token = strtok(NULL, ",");
                     fieldIndex++;
@@ -777,14 +772,15 @@ void loop() {
                 serializeJson(doc, jsonString);
                 mqttClient.publish(_mqttTopic, jsonString.c_str());
                 
-                uint8_t message[64]; // Buffer to hold the composed message
-                size_t messageLength = 0;
+                // Compose a time message for acquisition module:
+                uint8_t timeMessage[64] = {0}; // Buffer to hold the composed time message
+                size_t timeMessageLength = 0;
 
                 // Compose the message
-                composeMessage(timestamp, message, messageLength);
+                composeMessage(timestamp, timeMessage, timeMessageLength);
 
                 // Send the composed message to Serial1
-                Serial1.write(message, messageLength);
+                Serial1.write(timeMessage, timeMessageLength);
 
             }
 

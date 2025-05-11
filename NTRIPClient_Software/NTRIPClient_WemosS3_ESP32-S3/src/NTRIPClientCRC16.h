@@ -44,8 +44,8 @@
 
 /**
  * \brief Function to calculate CRC-16 for the given data.
- * \param data Pointer to the data buffer.
- * \param length Length of the data buffer.
+ * \param[in] data Pointer to the data buffer.
+ * \param[in] length Length of the data buffer.
  * \return Calculated CRC-16 value.
  */
 extern uint16_t calculateCRC16(const uint8_t* data, size_t length);
