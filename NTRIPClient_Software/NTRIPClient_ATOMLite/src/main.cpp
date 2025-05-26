@@ -314,41 +314,52 @@ void reconnectMQTT() {
 }
 
 /**
- * \brief Function to compose the message with Control-A, timestamp, CRC-16, and Control-X.
- * \param[in] timestamp The timestamp string to be included in the message.
+ * \brief Function to compose the message with Control-A, message, CRC-16, and Control-X, using byte stuffing.
+ * \param[in] message The message string to be included in the message.
  * \param[out] outputBuffer The buffer to store the composed message.
  * \param[in] outputLength The length of the composed message.
  * \details The message format is as follows:
  * - Control-A (0x01)
- * - Timestamp (string)
- * - CRC-16 (2 bytes, big-endian)
+ * - message (string), with byte stuffing
+ * - CRC-16 (2 bytes, big-endian), with byte stuffing
  * - Control-X (0x18)
  * 
- * 1. Prefix the message with a byte representing "Control-A" (0x01).
- * 2. Append the timestamp to the message.
- * 3. Calculate the CRC-16 over the bytes (excluding the "Control-A" prefix).
- * 4. Append the CRC-16 result to the message.
- * 5. Close the message with a byte representing "Control-X" (0x18).
- */ 
-void composeMessage(const char* timestamp, uint8_t* outputBuffer, size_t& outputLength) {
+ * Byte stuffing:
+ *   - Escape byte: 0x10 (DLE)
+ *   - If a data or CRC byte is 0x01, 0x18, or 0x10, insert 0x10 before it.
+ */
+void composeMessage(const char* message, uint8_t* outputBuffer, size_t& outputLength) {
     const uint8_t controlA = 0x01; // Control-A
     const uint8_t controlX = 0x18; // Control-X
+    const uint8_t escape   = 0x10; // DLE
 
-    // Start with Control-A
     size_t index = 0;
     outputBuffer[index++] = controlA;
 
-    // Append the timestamp
-    size_t timestampLength = strlen(timestamp);
-    memcpy(&outputBuffer[index], timestamp, timestampLength);
-    index += timestampLength;
+    // Append the message with byte stuffing
+    size_t messageLength = strlen(message);
+    for (size_t i = 0; i < messageLength; ++i) {
+        uint8_t b = (uint8_t)message[i];
+        if (b == controlA || b == controlX || b == escape) {
+            outputBuffer[index++] = escape;
+        }
+        outputBuffer[index++] = b;
+    }
 
-    // Calculate CRC-16 over the timestamp
-    uint16_t crc = calculateCRC16((const uint8_t*)timestamp, timestampLength);
+    // Calculate CRC-16 over the message (not including Control-A)
+    uint16_t crc = calculateCRC16((const uint8_t*)message, messageLength);
 
-    // Append the CRC-16 (big-endian)
-    outputBuffer[index++] = (crc >> 8) & 0xFF; // High byte
-    outputBuffer[index++] = crc & 0xFF;        // Low byte
+    // Append CRC-16 (big-endian) with byte stuffing
+    uint8_t crcHigh = (crc >> 8) & 0xFF;
+    uint8_t crcLow  = crc & 0xFF;
+    if (crcHigh == controlA || crcHigh == controlX || crcHigh == escape) {
+        outputBuffer[index++] = escape;
+    }
+    outputBuffer[index++] = crcHigh;
+    if (crcLow == controlA || crcLow == controlX || crcLow == escape) {
+        outputBuffer[index++] = escape;
+    }
+    outputBuffer[index++] = crcLow;
 
     // Append Control-X
     outputBuffer[index++] = controlX;
