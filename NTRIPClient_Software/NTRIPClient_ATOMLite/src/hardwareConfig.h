@@ -3,7 +3,7 @@
  * \brief Header file with hardware configuration and settings for ATOM-Lite ESP32 board
  *
  * \author Remko Welling (remko.welling@han.nl)
- * \date 11-5-2025
+ * \date 5-6-2025
  *
  * 
  */
@@ -22,17 +22,18 @@
 #define BUTTON_PIN 39       ///< GPIO for button input
 
 // Second serial interface for NTRIPClient
-#define TXD2_PIN 21         ///< Corrected to GPIO17 for UART2 TX
-#define RXD2_PIN 22         ///< Corrected to GPIO18 for UART2 RX
+#define TXD2_PIN 22         ///< GPIO18 for UART2 RX
+#define RXD2_PIN 21         ///< GPIO17 for UART2 TX
+
 // GPIO Serial1 (Telemetry unit)
 #define TXD1_PIN 19         ///< Corrected to GPIO19 for UART1 TX
 #define RXD1_PIN 23         ///< Corrected to GPIO20 for UART1 RX
 
-#define WIFI_LED 33         //</ GPIO9 for WiFi LED
-#define NTRIP_LED 33        ///< GPIO10 for NTRIP LED
+#define WIFI_LED 25         //</ GPIO9 for WiFi LED
+#define NTRIP_LED 23        ///< GPIO10 for NTRIP LED
 #define MQTT_LED 33         ///< GPIO11 for MQTT LED
-#define FIX_RTKFLOAT_LED 33 ///< GPIO12 for FIX RTK-FLOAT LED
-#define FIX_RTK_LED 33  
+#define FIX_RTKFLOAT_LED 25 ///< GPIO12 for FIX RTK-FLOAT LED
+#define FIX_RTK_LED 25  
 
 #define BUTTON_PRESS_TIME_MS 3000   ///< Time in milliseconds to hold button to enter configuration mode
 
