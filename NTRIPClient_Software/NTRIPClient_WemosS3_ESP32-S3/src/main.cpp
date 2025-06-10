@@ -546,13 +546,16 @@ void loop() {
             // Process relevant NMEA sentences
             if (strstr(nmeaBuffer, "$GNGGA") != NULL) {
                 
-                // Check if it is time to send GGA sentence to NTRIP server
-                // Send GGA sentence to NTRIP server every GGA_SEND_INTERVAL milliseconds
-                unsigned long currentTime = millis();
-                if (currentTime - lastGGASendTime >= GGA_SEND_INTERVAL) {
-                    ntrip_c.sendGGA(nmeaBuffer); // Send the GGA sentence to NTRIP server
-                    lastGGASendTime = currentTime; // Update the last GGA send time
-                }
+                // // Check if it is time to send GGA sentence to NTRIP server
+                // // Send GGA sentence to NTRIP server every GGA_SEND_INTERVAL milliseconds
+                // unsigned long currentTime = millis();
+                // if (currentTime - lastGGASendTime >= GGA_SEND_INTERVAL) {
+                //     ntrip_c.sendGGA(nmeaBuffer); // Send the GGA sentence to NTRIP server
+                //     lastGGASendTime = currentTime; // Update the last GGA send time
+                // }
+                
+                // Forward ANY GGA message immediately to the NTRIP caster
+                ntrip_c.sendGGA(nmeaBuffer);
 
                 strlcpy(ggaBuffer, nmeaBuffer, sizeof(ggaBuffer)); // Copy GGA sentence to buffer
                 ggaReceived = true; // Set flag to indicate that GGA sentence is received
