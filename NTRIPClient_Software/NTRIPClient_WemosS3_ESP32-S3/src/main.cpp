@@ -105,7 +105,6 @@ bool vtgReceived = false;
 bool isReceiving = false;          ///< Flag to track if data is being received
 unsigned long lastReceiveTime = {0}; ///< Time of last data received in ms
 
-
 // Button press handling
 bool buttonPressed = false;
 unsigned long buttonPressTime = {0};
@@ -113,6 +112,15 @@ bool configMode = false;
 
 unsigned long lastGGASendTime = 0; ///< Variable to store the last GGA send time
 unsigned long sequenceNumber = 0;   ///< Variable to store the sequence number for the JSON data
+
+static bool ntripConnected = false;
+static unsigned long ntripConnectAttemptTime = 0;
+static const unsigned long ntripConnectRetryInterval = 100; // 100 ms 
+static unsigned long ntripLedOffTime = 0;
+static bool ntripLedBlinking = false;
+
+static unsigned long mqttLedOffTime = 0;
+static bool mqttLedBlinking = false;
 
 IPAddress mqttBrokerIP; // Variable to store the MQTT broker IP address
 
@@ -205,7 +213,6 @@ void saveConfig() {
     doc["mqtt"]["user"] = _mqttUser;
     doc["mqtt"]["passwd"] = _mqttPassword;
     doc["mqtt"]["topic"] = _mqttTopic;
-
 
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {
@@ -372,6 +379,8 @@ void composeMessage(const char* message, uint8_t* outputBuffer, size_t& outputLe
  * @brief Setup function to initialize the system.
  */
 void setup() {
+    configurationMode(false); // Ensure WiFi is initialized and credentials are loaded/applied
+    
     // Initialize serial communication
     Serial.begin(115200); // Initialize USB CDC at 115200 baud
     delay(1000);          // Allow time for the Serial Monitor to connect
@@ -410,10 +419,6 @@ void setup() {
     digitalWrite(FIX_RTKFLOAT_LED, LOW);
     digitalWrite(FIX_RTK_LED, LOW);
 
-    // Call for configuration mode to initialize WiFi
-    Serial.println("[INFO] Checking for button press to enter configuration mode...");
-    configurationMode(digitalRead(BUTTON_PIN) == LOW);
-
     // Initialize WiFi connection
     if (WiFi.status() == WL_CONNECTED) {
         Serial.println("[INFO] WiFi connected.");
@@ -427,48 +432,14 @@ void setup() {
         digitalWrite(WIFI_LED, LOW); // Turn off WiFi LED
     }
 
-    // Log connection attempt to NTRIP server
+    // Start NTRIP connection attempt, but do not block
     Serial.print("[INFO] Connecting to NTRIP server: ");
     Serial.print(_ntripHost);
     Serial.print(":");
     Serial.println(_ntripHttpPort);
 
-    if (!espClient.connect(_ntripHost, _ntripHttpPort)) {
-        Serial.print("[ERROR] Failed to connect to NTRIP server at ");
-        Serial.print(_ntripHost);
-        Serial.print(":");
-        Serial.print(_ntripHttpPort);
-        Serial.println(". Connection timed out after 3000 ms.");
-        Serial.println("[DEBUG] Check if the server is reachable, the port is correct, and the network is stable.");
-    } else {
-        Serial.println("[INFO] Successfully connected to NTRIP server.");
-    }
-
-    // Request SourceTable from NTRIP server
-    Serial.println("[INFO] Requesting SourceTable from NTRIP server...");
-    // if (ntrip_c.reqSrcTblNoAuth(_ntripHost, _ntripHttpPort)) {
-    if (ntrip_c.reqSrcTbl(_ntripHost, _ntripHttpPort, _ntripUser, _ntripPassword)) {
-        char buffer[512];
-        delay(5);
-        while (ntrip_c.available()) {
-            ntrip_c.readLine(buffer, sizeof(buffer));
-            Serial.print(buffer); 
-        }
-        Serial.println("[INFO] SourceTable request completed successfully.");
-    } else {
-        Serial.println("[ERROR] Failed to request SourceTable from NTRIP server.");
-    }
-    ntrip_c.stop(); // Need to call "stop" function for next request.
-
-    // Request raw data from MountPoint
-    Serial.println("[INFO] Requesting MountPoint's Raw data");
-    if (!ntrip_c.reqRaw(_ntripHost, _ntripHttpPort, _ntripMountPoint, _ntripUser, _ntripPassword)) {
-        delay(15000);
-        ESP.restart();
-    }
-    Serial.println("[INFO] Successfully requested raw data from MountPoint.");
-    pixels.setPixelColor(0, pixels.Color(0, 0, 255)); // Blue for NTRIP connected and receiving
-    pixels.show();
+    // Initiate connection (non-blocking)
+    ntrip_c.connect(_ntripHost, _ntripHttpPort);
 
     // Initialize MQTT client
     Serial.println("[INFO] Initializing MQTT client...");
@@ -480,6 +451,7 @@ void setup() {
  * @brief Main loop function to handle data reception and button press.
  */
 void loop() {
+    
     // Check WiFi connection status and update WiFi LED
     if (WiFi.status() == WL_CONNECTED) {
         digitalWrite(WIFI_LED, HIGH); // Turn on WiFi LED
@@ -504,9 +476,23 @@ void loop() {
     // Continuously read and print data from NTRIP server
     bool dataReceived = false;
     while (ntrip_c.available()) {
-        char ch = ntrip_c.read();        
+        char ch = ntrip_c.read();
         Serial2.print(ch);
         dataReceived = true;
+    }
+
+    // NTRIP LED blink logic
+    if (ntripConnected) {
+        if (dataReceived && !ntripLedBlinking) {
+            digitalWrite(NTRIP_LED, LOW); // Turn off LED briefly
+            ntripLedOffTime = millis();
+            ntripLedBlinking = true;
+        }
+        // Turn LED back on after a short moment (e.g., 10 ms)
+        if (ntripLedBlinking && millis() - ntripLedOffTime > 100) {
+            digitalWrite(NTRIP_LED, HIGH);
+            ntripLedBlinking = false;
+        }
     }
 
     // Update LED based on receiving state
@@ -527,13 +513,26 @@ void loop() {
 
     if (!ntrip_c.connected()) {
         digitalWrite(NTRIP_LED, LOW);
-        Serial.println("[ERROR] NTRIP connection lost, restarting...");
-        ESP.restart();
-    }else{
-        digitalWrite(NTRIP_LED, HIGH);
-    }
 
-    // Read and send GGA sentences
+        if (millis() - ntripConnectAttemptTime > ntripConnectRetryInterval) {
+            Serial.println("[INFO] Attempting to connect to NTRIP server...");
+            ntripConnectAttemptTime = millis();
+            ntrip_c.connect(_ntripHost, _ntripHttpPort);
+        }
+        ntripConnected = false;
+    } else if (!ntripConnected) {
+        Serial.println("[INFO] NTRIP connection established.");
+        digitalWrite(NTRIP_LED, HIGH);
+        pixels.setPixelColor(0, pixels.Color(0, 0, 255)); // Blue for NTRIP connected and receiving
+        pixels.show();
+
+        ntrip_c.reqRaw(_ntripHost, _ntripHttpPort, _ntripMountPoint, _ntripUser, _ntripPassword);
+
+        ntripConnected = true;
+    }
+    
+    
+    // --- Always process and send serial data regardless of WiFi state ---
     while (Serial2.available()) {
         char ch = Serial2.read();
 
@@ -547,13 +546,16 @@ void loop() {
             // Process relevant NMEA sentences
             if (strstr(nmeaBuffer, "$GNGGA") != NULL) {
                 
-                // Check if it is time to send GGA sentence to NTRIP server
-                // Send GGA sentence to NTRIP server every GGA_SEND_INTERVAL milliseconds
-                unsigned long currentTime = millis();
-                if (currentTime - lastGGASendTime >= GGA_SEND_INTERVAL) {
-                    ntrip_c.sendGGA(nmeaBuffer); // Send the GGA sentence to NTRIP server
-                    lastGGASendTime = currentTime; // Update the last GGA send time
-                }
+                // // Check if it is time to send GGA sentence to NTRIP server
+                // // Send GGA sentence to NTRIP server every GGA_SEND_INTERVAL milliseconds
+                // unsigned long currentTime = millis();
+                // if (currentTime - lastGGASendTime >= GGA_SEND_INTERVAL) {
+                //     ntrip_c.sendGGA(nmeaBuffer); // Send the GGA sentence to NTRIP server
+                //     lastGGASendTime = currentTime; // Update the last GGA send time
+                // }
+                
+                // Forward ANY GGA message immediately to the NTRIP caster
+                ntrip_c.sendGGA(nmeaBuffer);
 
                 strlcpy(ggaBuffer, nmeaBuffer, sizeof(ggaBuffer)); // Copy GGA sentence to buffer
                 ggaReceived = true; // Set flag to indicate that GGA sentence is received
@@ -718,9 +720,15 @@ void loop() {
                 int year = 2025; 
                 int month = 3;
                 int day = 24;
+                bool rmcValid = false;
 
                 while (token != NULL) {
                     switch (fieldIndex) {
+                        case 2: // Date
+                            if (strcmp(token, "A") == 0) {
+                                rmcValid = true; // Valid date format
+                            }
+                            break;  
                         case 9:
                             strncpy(dateBuffer, token, sizeof(dateBuffer) - 1);
                             break;
@@ -790,19 +798,42 @@ void loop() {
                 doc["hdop"] = hdop;
                 doc["age"] = ageOfDifferentialData; // Add Age of Differential Data
 
-                String jsonString;
-                serializeJson(doc, jsonString);
-                mqttClient.publish(_mqttTopic, jsonString.c_str());
-                
-                // Compose a time message for acquisition module:
-                uint8_t timeMessage[64] = {0}; // Buffer to hold the composed time message
-                size_t timeMessageLength = 0;
+                // ==== Ready parsing NMEA data, now we can send it to the telemetry unit: ===
 
-                // Compose the message
-                composeMessage(timestamp, timeMessage, timeMessageLength);
+                if (rmcValid) {
+                    // Compose a time message for acquisition module and send it to Serial1:
+                    uint8_t timeMessage[64] = {0};
+                    size_t timeMessageLength = 0;
+                    composeMessage(timestamp, timeMessage, timeMessageLength);
+                    Serial1.write(timeMessage, timeMessageLength);
+                }
 
-                // Send the composed message to Serial1
-                Serial1.write(timeMessage, timeMessageLength);
+                // ==== When MQTT is connected, we can send the data to the MQTT broker: ====
+
+                // Collect data and format it into a JSON structure and send it to the MQTT broker
+                if (mqttClient.connected()) {
+                    DynamicJsonDocument doc(1024);
+                    doc["id"] = sequenceNumber++;
+                    doc["daytime"] = timestamp;
+                    doc["lat"] = latitude;
+                    doc["lon"] = longitude;
+                    doc["alt"] = altitude;
+                    doc["fix_type"] = fixType;
+                    doc["speed"] = speed;
+                    doc["dir"] = direction;
+                    doc["sats"] = satellites;
+                    doc["hdop"] = hdop;
+                    doc["age"] = ageOfDifferentialData;
+
+                    String jsonString;
+                    serializeJson(doc, jsonString);
+                    mqttClient.publish(_mqttTopic, jsonString.c_str());
+
+                    // --- MQTT LED blink logic: turn off LED briefly after sending ---
+                    digitalWrite(MQTT_LED, LOW); // Turn off LED briefly
+                    mqttLedOffTime = millis();
+                    mqttLedBlinking = true;
+                }
 
             }
 
@@ -822,4 +853,18 @@ void loop() {
         digitalWrite(MQTT_LED, HIGH);
     }
     mqttClient.loop(); // Ensure the MQTT client is processing incoming messages
+
+    if (WiFi.status() != WL_CONNECTED) {
+        static unsigned long lastAttempt = 0;
+        if (millis() - lastAttempt > 10000) { // Try every 10 seconds
+            Serial.println("[INFO] WiFi disconnected, trying to reconnect...");
+            WiFi.begin(_wifiSsid, _wifiPassword);
+            lastAttempt = millis();
+        }
+    }
+
+    if (mqttLedBlinking && millis() - mqttLedOffTime > 100) { // 100 ms blink
+        digitalWrite(MQTT_LED, HIGH);
+        mqttLedBlinking = false;
+    }
 }
