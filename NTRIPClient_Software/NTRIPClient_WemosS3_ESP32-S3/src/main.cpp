@@ -242,6 +242,9 @@ void configurationMode(const bool buttonPressed = false) {
     // Try to load existing configuration
     loadConfig();
 
+    // Track if WiFi credentials are already set (from SPIFFS)
+    bool wifiCredentialsSet = strlen(_wifiSsid) > 0 && strlen(_wifiPassword) > 0;
+
     WiFiManager wifiManager;
 
     // Custom parameters
@@ -254,6 +257,8 @@ void configurationMode(const bool buttonPressed = false) {
     WiFiManagerParameter custom_mqtt_user("mqtt_user", "MQTT Username", _mqttUser, sizeof(_mqttUser));
     WiFiManagerParameter custom_mqtt_passwd("mqtt_passwd", "MQTT Password", _mqttPassword, sizeof(_mqttPassword));
     WiFiManagerParameter custom_mqtt_topic("mqtt_topic", "MQTT Topic", _mqttTopic, sizeof(_mqttTopic));
+    WiFiManagerParameter custom_wifi_ssid("wifi_ssid", "WiFi SSID", _wifiSsid, sizeof(_wifiSsid));
+    WiFiManagerParameter custom_wifi_pass("wifi_pass", "WiFi Password (only for initial setup)", _wifiPassword, sizeof(_wifiPassword));
 
     // Add custom parameters to WiFiManager
     wifiManager.addParameter(&custom_host);
@@ -265,30 +270,36 @@ void configurationMode(const bool buttonPressed = false) {
     wifiManager.addParameter(&custom_mqtt_user);
     wifiManager.addParameter(&custom_mqtt_passwd);
     wifiManager.addParameter(&custom_mqtt_topic);
+    wifiManager.addParameter(&custom_wifi_ssid);
+    wifiManager.addParameter(&custom_wifi_pass);
 
     wifiManager.setSaveConfigCallback(saveConfigCallback);
     wifiManager.setBreakAfterConfig(true);
 
     // If configuration is empty, start configuration portal
     if (strlen(_wifiSsid) == 0 || strlen(_wifiPassword) == 0 || buttonPressed) {
-        // wifiManager.startConfigPortal("NTRIPClient_Config");
-
         wifiManager.startConfigPortal("NTRIPClient_Config");
         wifiManager.stopConfigPortal();
         wifiManager.disconnect();
     } else {
         WiFi.begin(_wifiSsid, _wifiPassword);
         if ((WiFi.waitForConnectResult() != WL_CONNECTED)) {
-            // wifiManager.autoConnect();
             wifiManager.startConfigPortal("NTRIPClient_Config");
         }
     }
 
-    if (configMode){
-        // Save the new configuration to globals
+    if (configMode) {
         Serial.println("[INFO] Storing data to SPIFFS");
-        strlcpy(_wifiSsid, WiFi.SSID().c_str(), sizeof(_wifiSsid));
-        strlcpy(_wifiPassword, WiFi.psk().c_str(), sizeof(_wifiPassword));
+
+        // Always update SSID from portal
+        strlcpy(_wifiSsid, custom_wifi_ssid.getValue(), sizeof(_wifiSsid));
+
+        // Only update password if not set yet (first setup)
+        if (!wifiCredentialsSet && strlen(custom_wifi_pass.getValue()) > 0) {
+            strlcpy(_wifiPassword, custom_wifi_pass.getValue(), sizeof(_wifiPassword));
+        }
+
+        // Save other custom parameters as usual
         strlcpy(_ntripHost, custom_host.getValue(), sizeof(_ntripHost));
         _ntripHttpPort = atoi(custom_port.getValue());
         strlcpy(_ntripMountPoint, custom_mntpnt.getValue(), sizeof(_ntripMountPoint));
@@ -298,14 +309,12 @@ void configurationMode(const bool buttonPressed = false) {
         strlcpy(_mqttUser, custom_mqtt_user.getValue(), sizeof(_mqttUser));
         strlcpy(_mqttPassword, custom_mqtt_passwd.getValue(), sizeof(_mqttPassword));
         strlcpy(_mqttTopic, custom_mqtt_topic.getValue(), sizeof(_mqttTopic));
-        
-        // Save globals to SPIFFS
+
         saveConfig();
-        ESP.restart();
     }
-    #ifdef Debug
+#ifdef Debug
     printConfig();
-    #endif
+#endif
 }
 
 /**
